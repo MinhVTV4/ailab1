@@ -209,6 +209,106 @@
             top: 0.25rem;
             right: 0.25rem;
         }
+        /* NEW: Thermometer styling */
+        .thermometer-container {
+            position: absolute;
+            width: 30px;
+            height: 100px;
+            background-color: #ccc;
+            border-radius: 15px 15px 5px 5px;
+            border: 2px solid #666;
+            overflow: hidden;
+            left: 20px; /* Example position */
+            top: 20px; /* Example position */
+            z-index: 100;
+        }
+        .thermometer-bulb {
+            width: 40px;
+            height: 40px;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -10px;
+            left: -5px;
+        }
+        .thermometer-mercury {
+            position: absolute;
+            width: 10px;
+            background-color: red;
+            bottom: 0;
+            left: 10px;
+            border-radius: 0 0 5px 5px;
+        }
+
+        /* NEW: Countdown timer styles */
+        #reaction-timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d9534f;
+            margin-top: 10px;
+            text-align: center;
+        }
+        /* New: Safety Alert styles */
+        .safety-alert {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Styling for the tool container */
+        #tools-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .tool-item {
+            background-color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: grab;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #ccc;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .tool-item:hover {
+            background-color: #d0d0d0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .tool-item:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .tool-item svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .temp-display {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #d9534f;
+            text-align: center;
+            margin-top: 5px;
+        }
+
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -276,6 +376,17 @@
             <div id="userExperimentsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 min-h-[100px] bg-gray-50 p-2 rounded border">
                 <p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>
             </div>
+            <!-- NEW: Experiment Suggestion Section -->
+            <div class="mt-6 p-4 bg-gray-50 rounded border">
+                <h4 class="text-lg font-semibold text-gray-700 mb-3">Gợi ý thí nghiệm từ AI:</h4>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="experimentSuggestionPrompt" placeholder="Ví dụ: Phản ứng tỏa nhiệt, kết tủa trắng" class="flex-grow p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+                    <button id="suggestExperimentButton" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded">Gợi ý</button>
+                </div>
+                <div id="experimentSuggestionResults" class="min-h-[50px] text-sm text-gray-600">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
         </div>
         <!-- END NEW SECTION -->
 
@@ -290,13 +401,42 @@
             </div>
         </div>
 
+        <!-- NEW: Tools container -->
+        <div class="mb-6 p-4 bg-white rounded shadow">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">Công cụ phòng thí nghiệm</h3>
+            <div id="tools-container">
+                <div class="tool-item" data-tool-type="thermometer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M14 6V1H10V6H14ZM12 21C14.7614 21 17 18.7614 17 16C17 13.9882 15.6599 12.2858 13.7915 11.6067C14.5492 10.966 15 10.0381 15 9C15 7.34315 13.6569 6 12 6C10.3431 6 9 7.34315 9 9C9 10.0381 9.45083 10.966 10.2085 11.6067C8.34014 12.2858 7 13.9882 7 16C7 18.7614 9.23858 21 12 21ZM12 19C10.3431 19 9 17.6569 9 16C9 14.8954 9.67134 13.9452 10.6558 13.4339C11.1394 13.2083 11.7583 13.0906 12.336 13.0645C12.4452 13.0594 12.5548 13.0594 12.664 13.0645C13.2417 13.0906 13.8606 13.2083 14.3442 13.4339C15.3287 13.9452 16 14.8954 16 16C16 17.6569 14.6569 19 13 19H12ZM12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17Z" /><path d="M12 7C12.5523 7 13 7.44772 13 8C13 8.55228 12.5523 9 12 9C11.4477 9 11 8.55228 11 8C11 7.44772 11.4477 7 12 7Z"/></svg>
+                    Nhiệt kế
+                </div>
+                <div class="tool-item" data-tool-type="burner">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20ZM12 8C10.8954 8 10 8.89543 10 10C10 11.1046 10.8954 12 12 12C13.1046 12 14 11.1046 14 10C14 8.89543 13.1046 8 12 8ZM12 14C10.8954 14 10 14.8954 10 16C10 17.1046 10.8954 18 12 18C13.1046 18 14 17.1046 14 16C14 14.8954 13.1046 14 12 14Z"/></svg>
+                    Đèn cồn
+                </div>
+                <div class="tool-item" data-tool-type="test-tube">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M18 2H6C5.44772 2 5 2.44772 5 3V21C5 21.5523 5.44772 22 6 22H18C18.5523 22 19 21.5523 19 21V3C19 2.44772 18.5523 2 18 2ZM7 4H17V20H7V4Z"/></svg>
+                    Ống nghiệm
+                </div>
+                <div class="tool-item" data-tool-type="erlenmeyer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M19 2H5C4.44772 2 4 2.44772 4 3V21C4 21.5523 4.44772 22 5 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2ZM6 4H18V20H6V4Z"/></svg>
+                    Bình tam giác
+                </div>
+                <!-- You can add more tools here following the same structure -->
+            </div>
+        </div>
+
         <div id="lab-container" class="flex flex-col md:flex-row md:justify-around w-full max-w-6xl mx-auto gap-4">
-            <div id="konva-outer-container" class="w-full md:w-2/3 bg-gray-200 border border-gray-300 rounded-lg shadow p-2 flex justify-center items-center touch-none">
+            <div id="konva-outer-container" class="w-full md:w-2/3 bg-gray-200 border border-gray-300 rounded-lg shadow p-2 flex justify-center items-center touch-none relative">
                 <div id="konva-stage-container"></div>
+                <!-- NEW: Countdown timer display -->
+                <div id="reaction-timer" class="absolute bottom-2 left-1/2 -translate-x-1/2 hidden"></div>
+                 <!-- NEW: Temperature Display -->
+                <div id="beaker-temperature-display" class="temp-display absolute top-4 right-4 hidden"></div>
             </div>
 
             <div id="ai-controls-container" class="w-full md:w-1/3 flex flex-col bg-white p-4 border border-gray-300 rounded-lg shadow">
                 <h2 class="text-xl font-semibold text-blue-600 mb-3">Kết quả & Tương tác AI</h2>
+                <div id="safety-alert-container" class="safety-alert hidden"></div>
                 <h3 class="text-lg font-semibold text-blue-600 mb-2">Phản hồi từ Gemini:</h3>
                 <div id="responseContainer" class="p-3 border border-gray-200 bg-gray-50 rounded-md min-h-[150px] whitespace-pre-wrap flex-grow overflow-y-auto mb-4">
                     Chưa có phản hồi...
@@ -357,7 +497,7 @@
 
 
     <script type="module">
-        // Import các hàm từ Firebase SDK
+        // Import functions from Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
         import {
             getAuth,
@@ -386,7 +526,7 @@
 
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAnWoc5pBabK2OfFeCau61X1PioBR5gBD8", // <-- Thay bằng API key của bạn từ Firebase Console
+            apiKey: "AIzaSyAnWoc5pBabK2OfFeCau61X1PioBR5gBD8", // <-- Replace with your API key from Firebase Console
             authDomain: "ailab-9ef87.firebaseapp.com",
             projectId: "ailab-9ef87",
             storageBucket: "ailab-9ef87.appspot.com",
@@ -405,9 +545,9 @@
             geminiModel = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
             console.log("Generative Model instance created with model 'gemini-2.0-flash'!");
         } catch (e) {
-            console.error("Lỗi khi khởi tạo AI Model:", e);
+            console.error("Error initializing AI Model:", e);
             document.getElementById("gemini-api-error-notice").classList.remove('hidden');
-            document.getElementById("gemini-api-error-notice").innerHTML = `<p class="font-bold">Lỗi khởi tạo AI Model!</p><p>${e.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+            document.getElementById("gemini-api-error-notice").innerHTML = `<p class="font-bold">AI Model initialization error!</p><p>${e.message}. Please check your Firebase project configuration and ensure the Generative Language API is enabled in Google Cloud Console.</p>`;
         }
 
 
@@ -466,6 +606,14 @@
         const cancelDeleteExperiment = document.getElementById('cancelDeleteExperiment');
         const confirmDeleteExperiment = document.getElementById('confirmDeleteExperiment');
 
+        // NEW: Experiment Suggestion DOM elements
+        const experimentSuggestionPrompt = document.getElementById('experimentSuggestionPrompt');
+        const suggestExperimentButton = document.getElementById('suggestExperimentButton');
+        const experimentSuggestionResults = document.getElementById('experimentSuggestionResults');
+
+        // NEW: Safety Alert Display
+        const safetyAlertContainer = document.getElementById('safety-alert-container');
+
         let experimentIdToDelete = null; // To store ID of experiment to delete
 
         // Stored chemicals for filtering
@@ -491,6 +639,7 @@
                 melting_point_C: 0,
                 isFlammable: false,
                 isReactive: false,
+                safetyPrecautions: "An toàn tuyệt đối.",
                 specificReactions: []
             },
             {
@@ -498,7 +647,7 @@
                 formula: "HCl",
                 smiles: "Cl",
                 appearance: "Chất lỏng không màu, bốc khói trong không khí ẩm.",
-                solutionColor: "rgba(255, 100, 100, 0.1)", // Hồng nhạt
+                solutionColor: "rgba(255, 100, 100, 0.1)", // Light pink
                 description: "Là một axit mạnh, ăn mòn nhiều kim loại. Được sử dụng rộng rãi trong công nghiệp và phòng thí nghiệm.",
                 type: "acid",
                 strength: "strong",
@@ -510,9 +659,10 @@
                 boiling_point_C: "Khoảng -85 (khan) đến 110 (dung dịch 20.2%)",
                 isFlammable: false,
                 isReactive: true,
+                safetyPrecautions: "Ăn mòn mạnh. Mang găng tay, kính bảo hộ. Tránh hít hơi.",
                 specificReactions: [
-                    {"with": "NaOH", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt.", "product": "NaCl, H2O"},
-                    {"with": "Zn", "phenomenon": "Sủi bọt khí H2.", "product": "ZnCl2, H2"}
+                    {"with": "NaOH", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt mạnh.", "product": "NaCl, H2O"},
+                    {"with": "Zn", "phenomenon": "Sủi bọt khí H2 mạnh.", "product": "ZnCl2, H2"}
                 ]
             },
             {
@@ -520,7 +670,7 @@
                 formula: "NaOH",
                 smiles: "[Na+].[OH-]",
                 appearance: "Chất rắn màu trắng, hút ẩm mạnh.",
-                solutionColor: "rgba(100, 100, 255, 0.1)", // Xanh nhạt
+                solutionColor: "rgba(100, 100, 255, 0.1)", // Light blue
                 description: "Là một bazơ mạnh, tan nhiều trong nước, tạo dung dịch kiềm ăn mòn. Thường được gọi là xút ăn da.",
                 type: "base",
                 strength: "strong",
@@ -533,8 +683,9 @@
                 boiling_point_C: 1388,
                 isFlammable: false,
                 isReactive: true,
+                safetyPrecautions: "Ăn mòn da, mắt. Cần thiết bị bảo hộ, rửa sạch ngay khi tiếp xúc.",
                 specificReactions: [
-                    {"with": "HCl", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt.", "product": "NaCl, H2O"},
+                    {"with": "HCl", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt mạnh.", "product": "NaCl, H2O"},
                     {"with": "CuCl2", "phenomenon": "Tạo kết tủa xanh lam Cu(OH)2.", "product": "Cu(OH)2, NaCl"}
                 ]
             },
@@ -543,7 +694,7 @@
                 formula: "CuSO4",
                 smiles: "[Cu+2].[O-]S(=O)(=O)[O-]",
                 appearance: "Chất rắn tinh thể màu xanh lam.",
-                solutionColor: "rgba(0, 0, 255, 0.4)", // Xanh đậm
+                solutionColor: "rgba(0, 0, 255, 0.4)", // Dark blue
                 description: "Muối đồng, tan tốt trong nước tạo dung dịch màu xanh. Được dùng làm thuốc diệt nấm, thuốc trừ sâu.",
                 type: "salt",
                 strength: "neutral",
@@ -555,9 +706,121 @@
                 melting_point_C: 150, // decomposes
                 isFlammable: false,
                 isReactive: false,
+                safetyPrecautions: "Độc hại nếu nuốt phải. Tránh tiếp xúc da, mắt.",
                 specificReactions: [
                     {"with": "NaOH", "phenomenon": "Tạo kết tủa xanh lam Cu(OH)2.", "product": "Cu(OH)2, Na2SO4"},
                     {"with": "Fe", "phenomenon": "Sắt bị ăn mòn, tạo đồng kim loại màu đỏ nâu.", "product": "FeSO4, Cu"}
+                ]
+            },
+            {
+                name: "Bạc Nitrat",
+                formula: "AgNO3",
+                smiles: "[Ag+].[O-][N+](=O)O",
+                appearance: "Chất rắn tinh thể không màu.",
+                solutionColor: "rgba(255, 255, 255, 0.1)", // Transparent
+                description: "Muối bạc, tan tốt trong nước. Dùng trong nhiếp ảnh, y học. Nhạy cảm với ánh sáng.",
+                type: "salt",
+                strength: "neutral",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Ag+", "anion": "NO3-"},
+                colorWhenDry: "Không màu",
+                density_g_cm3: 4.35,
+                melting_point_C: 209,
+                isFlammable: false,
+                isReactive: true,
+                safetyPrecautions: "Gây ăn mòn da, mắt. Để lại vết đen trên da khi tiếp xúc với ánh sáng. Tránh xa ánh sáng.",
+                specificReactions: [
+                    {"with": "NaCl", "phenomenon": "Tạo kết tủa trắng AgCl.", "product": "AgCl, NaNO3", "reactionDurationSeconds": 1}, // Fast reaction
+                    {"with": "Cu", "phenomenon": "Đồng bị ăn mòn, tạo bạc kim loại sáng bóng.", "product": "Cu(NO3)2, Ag"}
+                ]
+            },
+            {
+                name: "Natri Carbonat",
+                formula: "Na2CO3",
+                smiles: "[Na+].[Na+].[O-]C([O-])=O",
+                appearance: "Chất rắn bột màu trắng.",
+                solutionColor: "rgba(100, 100, 255, 0.1)", // Light blue (weak base)
+                description: "Muối natri của axit cacbonic. Dùng trong công nghiệp thủy tinh, xà phòng.",
+                type: "salt",
+                strength: "weak base",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Na+", "anion": "CO32-"},
+                colorWhenDry: "Trắng",
+                density_g_cm3: 2.54,
+                melting_point_C: 851,
+                isFlammable: false,
+                isReactive: false,
+                safetyPrecautions: "Gây kích ứng mắt và da. Tránh hít bụi.",
+                specificReactions: [
+                    {"with": "HCl", "phenomenon": "Sủi bọt khí CO2 mạnh mẽ.", "product": "NaCl, H2O, CO2", "reactionDurationSeconds": 3} // Medium reaction
+                ]
+            },
+            {
+                name: "Canxi Clorua",
+                formula: "CaCl2",
+                smiles: "[Ca+2].[Cl-].[Cl-]",
+                appearance: "Chất rắn dạng hạt màu trắng.",
+                solutionColor: "rgba(173, 216, 230, 0.1)", // Transparent
+                description: "Muối clorua của canxi, hút ẩm mạnh. Dùng làm chất hút ẩm, trong xây dựng.",
+                type: "salt",
+                strength: "neutral",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Ca2+", "anion": "Cl-"},
+                colorWhenDry: "Trắng",
+                density_g_cm3: 2.15,
+                melting_point_C: 772,
+                isFlammable: false,
+                isReactive: false,
+                safetyPrecautions: "Gây kích ứng da, mắt. Có thể gây bỏng nếu tiếp xúc với nước.",
+                specificReactions: [
+                     {"with": "Na2CO3", "phenomenon": "Tạo kết tủa trắng CaCO3.", "product": "CaCO3, NaCl"}
+                ]
+            },
+            {
+                name: "Kali Iodua",
+                formula: "KI",
+                smiles: "[K+].[I-]",
+                appearance: "Chất rắn tinh thể màu trắng.",
+                solutionColor: "rgba(255, 255, 255, 0.1)", // Transparent
+                description: "Muối iodua của kali. Dùng trong y tế, hóa phân tích.",
+                type: "salt",
+                strength: "neutral",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "K+", "anion": "I-"},
+                colorWhenDry: "Trắng",
+                density_g_cm3: 3.13,
+                melting_point_C: 681,
+                isFlammable: false,
+                isReactive: false,
+                safetyPrecautions: "Có thể gây kích ứng. Tránh nuốt phải.",
+                specificReactions: [
+                    {"with": "Pb(NO3)2", "phenomenon": "Tạo kết tủa vàng PbI2.", "product": "PbI2, KNO3"}
+                ]
+            },
+            {
+                name: "Chì(II) Nitrat",
+                formula: "Pb(NO3)2",
+                smiles: "[Pb+2].[O-][N+](=O)O.[O-][N+](=O)O",
+                appearance: "Chất rắn tinh thể màu trắng.",
+                solutionColor: "rgba(255, 255, 255, 0.1)", // Transparent
+                description: "Muối nitrat của chì. Độc hại. Dùng trong công nghiệp diêm, thuốc nổ.",
+                type: "salt",
+                strength: "neutral",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Pb2+", "anion": "NO3-"},
+                colorWhenDry: "Trắng",
+                density_g_cm3: 4.53,
+                melting_point_C: 290, // decomposes
+                isFlammable: false,
+                isReactive: false,
+                safetyPrecautions: "Rất độc hại. Không được nuốt hoặc hít phải. Cần thiết bị bảo hộ đầy đủ. Gây ô nhiễm môi trường.",
+                specificReactions: [
+                     {"with": "KI", "phenomenon": "Tạo kết tủa vàng PbI2.", "product": "PbI2, KNO3", "reactionDurationSeconds": 2} // Medium reaction
                 ]
             }
         ];
@@ -579,7 +842,7 @@
             const responseContainer = document.getElementById("responseContainer");
 
             if (!geminiModel) {
-                const errorMessage = "Mô hình AI chưa được khởi tạo. Vui lòng kiểm tra console để biết lỗi.";
+                const errorMessage = "AI model not initialized. Please check console for errors.";
                 if (responseContainer) {
                     responseContainer.innerText = errorMessage;
                 }
@@ -588,13 +851,13 @@
             }
             if (!promptText || !promptText.trim()) {
                 if (typeof showToast === 'function') {
-                    showToast("Vui lòng nhập lời nhắc cho Gemini.");
+                    showToast("Please enter a prompt for Gemini.");
                 }
                 return;
             }
 
             if (responseContainer) {
-                responseContainer.textContent = "Đang gửi yêu cầu đến Gemini...";
+                responseContainer.textContent = "Sending request to Gemini...";
             }
             console.log("Calling generic Gemini API with prompt:", promptText);
 
@@ -604,44 +867,45 @@
                 const response = result.response;
                 const text = response.text();
                 if(responseContainer) {
-                    responseContainer.innerHTML = `<strong>Phản hồi từ AI:</strong><br>${text}`;
+                    responseContainer.innerHTML = `<strong>AI Response:</strong><br>${text}`;
                 }
                 console.log("Response text from generic Gemini API:", text);
             } catch (error) {
-                console.error("Lỗi khi gọi Gemini API (chung):", error);
+                console.error("Error calling Gemini API (generic):", error);
                 if (responseContainer) {
-                    responseContainer.innerHTML = `<span class="text-red-600 font-bold">Lỗi Gemini: ${error.message}.</span>`;
+                    responseContainer.innerHTML = `<span class="text-red-600 font-bold">Gemini Error: ${error.message}.</span>`;
                 }
                  // Show API error notice only if it's an actual API error, not a prompt issue.
                 geminiApiErrorNotice.classList.remove('hidden');
-                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Gemini API connection error!</p><p>${error.message}. Please check your Firebase project configuration and ensure the Generative Language API is enabled in Google Cloud Console.</p>`;
             }
         }
 
         function displayChemicalInfoInPanel(chemicalData) {
             if (chemicalData && infoPanel && infoPanelTitle && infoPanelDescription && infoPanelOverlay) {
-                infoPanelTitle.textContent = chemicalData.name || "Thông tin Hóa chất";
+                infoPanelTitle.textContent = chemicalData.name || "Chemical Information";
                 infoPanelDescription.innerHTML = `
-                    <p><strong>Công thức:</strong> ${chemicalData.formula || 'N/A'}</p>
-                    <p><strong>Mã SMILES:</strong> ${chemicalData.smiles || 'N/A'}</p>
-                    <p><strong>Dạng:</strong> ${chemicalData.appearance || 'N/A'}</p>
-                    <p><strong>Loại:</strong> ${chemicalData.type || 'N/A'}</p>
-                    <p><strong>Độ mạnh:</strong> ${chemicalData.strength || 'N/A'}</p>
-                    <p><strong>Trạng thái chuẩn:</strong> ${chemicalData.stateAtSTP || 'N/A'}</p>
-                    <p><strong>Khả năng tan trong nước:</strong> ${chemicalData.isSoluble !== undefined ? (chemicalData.isSoluble ? 'Tan' : 'Không tan') : 'N/A'}</p>
-                    <p><strong>Màu dung dịch:</strong> <span style="display:inline-block; width:20px; height:20px; background-color:${chemicalData.solutionColor || 'transparent'}; border: 1px solid #ccc; vertical-align: middle;"></span> ${chemicalData.solutionColor || 'N/A'}</p>
-                    <p><strong>Màu khi khô:</strong> ${chemicalData.colorWhenDry || 'N/A'}</p>
-                    ${chemicalData.ionFormation ? `<p><strong>Tạo ion:</strong> Cation: ${chemicalData.ionFormation.cation || 'N/A'}, Anion: ${chemicalData.ionFormation.anion || 'N/A'}</p>` : ''}
-                    <p class="mt-3"><strong>Mô tả chi tiết:</strong> ${chemicalData.description || "Không có mô tả chi tiết."}</p>
-                    ${chemicalData.density_g_cm3 ? `<p><strong>Khối lượng riêng:</strong> ${chemicalData.density_g_cm3} g/cm³</p>` : ''}
-                    ${chemicalData.boiling_point_C ? `<p><strong>Nhiệt độ sôi:</strong> ${chemicalData.boiling_point_C} °C</p>` : ''}
-                    ${chemicalData.melting_point_C ? `<p><strong>Nhiệt độ nóng chảy:</strong> ${chemicalData.melting_point_C} °C</p>` : ''}
-                    ${chemicalData.isFlammable !== undefined ? `<p><strong>Dễ cháy:</strong> ${chemicalData.isFlammable ? 'Có' : 'Không'}</p>` : ''}
-                    ${chemicalData.isReactive !== undefined ? `<p><strong>Dễ phản ứng:</strong> ${chemicalData.isReactive ? 'Có' : 'Không'}</p>` : ''}
+                    <p><strong>Formula:</strong> ${chemicalData.formula || 'N/A'}</p>
+                    <p><strong>SMILES Code:</strong> ${chemicalData.smiles || 'N/A'}</p>
+                    <p><strong>Appearance:</strong> ${chemicalData.appearance || 'N/A'}</p>
+                    <p><strong>Type:</strong> ${chemicalData.type || 'N/A'}</p>
+                    <p><strong>Strength:</strong> ${chemicalData.strength || 'N/A'}</p>
+                    <p><strong>Standard State:</strong> ${chemicalData.stateAtSTP || 'N/A'}</p>
+                    <p><strong>Solubility in Water:</strong> ${chemicalData.isSoluble !== undefined ? (chemicalData.isSoluble ? 'Soluble' : 'Insoluble') : 'N/A'}</p>
+                    <p><strong>Solution Color:</strong> <span style="display:inline-block; width:20px; height:20px; background-color:${chemicalData.solutionColor || 'transparent'}; border: 1px solid #ccc; vertical-align: middle;"></span> ${chemicalData.solutionColor || 'N/A'}</p>
+                    <p><strong>Color when dry:</strong> ${chemicalData.colorWhenDry || 'N/A'}</p>
+                    ${chemicalData.ionFormation ? `<p><strong>Ion Formation:</strong> Cation: ${chemicalData.ionFormation.cation || 'N/A'}, Anion: ${chemicalData.ionFormation.anion || 'N/A'}</p>` : ''}
+                    <p class="mt-3"><strong>Detailed Description:</strong> ${chemicalData.description || "No detailed description available."}</p>
+                    ${chemicalData.density_g_cm3 ? `<p><strong>Density:</strong> ${chemicalData.density_g_cm3} g/cm³</p>` : ''}
+                    ${chemicalData.boiling_point_C ? `<p><strong>Boiling Point:</strong> ${chemicalData.boiling_point_C} °C</p>` : ''}
+                    ${chemicalData.melting_point_C ? `<p><strong>Melting Point:</strong> ${chemicalData.melting_point_C} °C</p>` : ''}
+                    ${chemicalData.isFlammable !== undefined ? `<p><strong>Flammable:</strong> ${chemicalData.isFlammable ? 'Yes' : 'No'}</p>` : ''}
+                    ${chemicalData.isReactive !== undefined ? `<p><strong>Reactive:</strong> ${chemicalData.isReactive ? 'Yes' : 'No'}</p>` : ''}
+                    ${chemicalData.safetyPrecautions ? `<p><strong>Safety Precautions:</strong> <span class="text-red-700 font-semibold">${chemicalData.safetyPrecautions}</span></p>` : ''}
                     ${chemicalData.specificReactions && chemicalData.specificReactions.length > 0 ? `
-                        <h4 class="font-semibold mt-3 mb-1">Phản ứng đặc trưng:</h4>
+                        <h4 class="font-semibold mt-3 mb-1">Specific Reactions:</h4>
                         <ul class="list-disc list-inside">
-                            ${chemicalData.specificReactions.map(r => `<li>Với ${r.with}: ${r.phenomenon} (Sản phẩm: ${r.product})</li>`).join('')}
+                            ${chemicalData.specificReactions.map(r => `<li>With ${r.with}: ${r.phenomenon} (Product: ${r.product})</li>`).join('')}
                         </ul>
                     ` : ''}
                 `;
@@ -661,14 +925,14 @@
                     SmilesDrawer.parse(chemicalData.smiles, function(tree) {
                         smilesDrawer.draw(tree, 'molecule-canvas', 'light', false);
                     }, function(err) {
-                        console.error("Lỗi SmilesDrawer:", err);
+                        console.error("SmilesDrawer Error:", err);
                         canvas.classList.add('hidden');
-                        smilesNotFound.textContent = "Lỗi khi vẽ cấu trúc từ mã SMILES.";
+                        smilesNotFound.textContent = "Error drawing structure from SMILES code.";
                         smilesNotFound.classList.remove('hidden');
                     });
                 } else {
                     canvas.classList.add('hidden');
-                    smilesNotFound.textContent = "Không tìm thấy mã SMILES để vẽ cấu trúc.";
+                    smilesNotFound.textContent = "SMILES code not found to draw structure.";
                     smilesNotFound.classList.remove('hidden');
                     drawingContainer.classList.remove('hidden');
                 }
@@ -725,7 +989,7 @@
             if (user) {
                 currentUserId = user.uid;
                 console.log("User logged in:", currentUserId, user.email);
-                userEmailDisplay.textContent = `Đã đăng nhập với: ${user.email} (ID: ${currentUserId.substring(0,6)}...)`;
+                userEmailDisplay.textContent = `Logged in as: ${user.email} (ID: ${currentUserId.substring(0,6)}...)`;
                 signOutButton.classList.remove('hidden');
                 authContainer.classList.add('lab-hidden');
                 labSection.classList.remove('lab-hidden');
@@ -735,7 +999,7 @@
             } else {
                 currentUserId = null;
                 console.log("User logged out or not logged in.");
-                userEmailDisplay.textContent = "Chưa đăng nhập";
+                userEmailDisplay.textContent = "Not logged in";
                 signOutButton.classList.add('hidden');
                 authContainer.classList.remove('lab-hidden');
                 labSection.classList.add('lab-hidden');
@@ -747,20 +1011,20 @@
             const email = loginEmailInput.value;
             const password = loginPasswordInput.value;
             if (!email || !password) {
-                showToast("Vui lòng nhập email và mật khẩu.");
+                showToast("Please enter email and password.");
                 return;
             }
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                showToast("Đăng nhập thành công!");
+                showToast("Login successful!");
                 loginEmailInput.value = '';
                 loginPasswordInput.value = '';
             } catch (error) {
-                console.error("Lỗi đăng nhập:", error);
+                console.error("Login error:", error);
                 if (typeof showToast === 'function') {
-                    showToast(`Lỗi đăng nhập: ${error.message}`);
+                    showToast(`Login error: ${error.message}`);
                 } else {
-                    console.error("showToast is not defined in loginButton catch. Error:", `Lỗi đăng nhập: ${error.message}`);
+                    console.error("showToast is not defined in loginButton catch. Error:", `Login error: ${error.message}`);
                 }
             }
         });
@@ -769,25 +1033,25 @@
             const email = registerEmailInput.value;
             const password = registerPasswordInput.value;
             if (!email || !password) {
-                showToast("Vui lòng nhập email và mật khẩu.");
+                showToast("Please enter email and password.");
                 return;
             }
             if (password.length < 6) {
-                showToast("Mật khẩu phải có ít nhất 6 ký tự.");
+                showToast("Password must be at least 6 characters.");
                 return;
             }
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                showToast("Đăng ký thành công! Đang chuyển đến đăng nhập...");
+                showToast("Registration successful! Redirecting to login...");
                 registerEmailInput.value = '';
                 registerPasswordInput.value = '';
                 showLoginLink.click();
             } catch (error) {
-                console.error("Lỗi đăng ký:", error);
+                console.error("Registration error:", error);
                 if (typeof showToast === 'function') {
-                    showToast(`Lỗi đăng ký: ${error.message}. Hãy đảm bảo phương thức Email/Password đã được bật trong Firebase Console.`);
+                    showToast(`Registration error: ${error.message}. Please ensure Email/Password method is enabled in Firebase Console.`);
                 } else {
-                    console.error("showToast is not defined in registerButton catch. Error:", `Lỗi đăng ký: ${error.message}`);
+                    console.error("showToast is not defined in registerButton catch. Error:", `Registration error: ${error.message}`);
                 }
             }
         });
@@ -795,36 +1059,36 @@
         signOutButton.addEventListener('click', async () => {
             try {
                 await signOut(auth);
-                showToast("Đã đăng xuất.");
+                showToast("Logged out.");
             } catch (error) {
-                console.error("Lỗi đăng xuất:", error);
+                console.error("Logout error:", error);
                 if (typeof showToast === 'function') {
-                    showToast(`Lỗi đăng xuất: ${error.message}`);
+                    showToast(`Logout error: ${error.message}`);
                 }
             }
         });
 
         createChemicalButton.addEventListener('click', async () => {
             if (!currentUserId) {
-                showToast("Vui lòng đăng nhập để tạo hóa chất.");
+                showToast("Please log in to create chemicals.");
                 return;
             }
             if (!geminiModel) {
-                 showToast("Mô hình AI chưa sẵn sàng để tạo hóa chất.");
+                 showToast("AI model is not ready to create chemicals.");
                  document.getElementById("gemini-api-error-notice").classList.remove('hidden'); // Ensure error notice is visible
                  return;
             }
 
             const chemicalName = chemicalNameInput.value.trim();
             if (!chemicalName) {
-                showToast("Vui lòng nhập tên hóa chất.");
+                showToast("Please enter a chemical name.");
                 return;
             }
-            showToast("Đang liên hệ với AI để định nghĩa hóa chất..."); 
+            showToast("Contacting AI to define chemical..."); 
 
             // Show loading state for button
             const originalButtonText = createChemicalButton.innerHTML;
-            createChemicalButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang tạo...';
+            createChemicalButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creating...';
             createChemicalButton.disabled = true;
 
 
@@ -832,47 +1096,28 @@
             currentSelectedAiChemical = null;
 
             // UPDATED PROMPT: Added "smiles" field request
-            const prompt = `Cung cấp thông tin chi tiết về hóa chất "${chemicalName}" dưới dạng một đối tượng JSON. JSON object phải bao gồm các trường sau:
-- "name": (string) Tên đầy đủ và phổ biến của hóa chất.
-- "formula": (string) Công thức hóa học.
-- "smiles": (string, optional) Mã SMILES của hóa chất. Nếu không tìm thấy hoặc không áp dụng, trả về một chuỗi rỗng "".
-- "appearance": (string) Mô tả ngắn về hình dạng, trạng thái ở điều kiện thường (ví dụ: chất lỏng không màu, chất rắn tinh thể màu trắng).
-- "solutionColor": (string) Một chuỗi RGBA đại diện cho màu sắc của dung dịch hóa chất khi hòa tan trong nước (nếu có thể). Ví dụ: "rgba(255, 100, 100, 0.6)" cho màu hồng nhạt, hoặc "rgba(255, 255, 255, 0.1)" nếu không màu/rất nhạt. Nếu là chất rắn không tan, có thể để "rgba(200,200,200,0.7)".
-- "description": (string) Mô tả chi tiết hơn về tính chất vật lý, hóa học cơ bản, ứng dụng hoặc cảnh báo an toàn (nếu có).
-- "type": (string, optional) Loại hóa chất (ví dụ: "acid", "base", "salt", "metal", "nonmetal", "oxide", "organic").
-- "strength": (string, optional) Độ mạnh (ví dụ: "strong", "weak", "moderate"). Áp dụng cho acid, base.
-- "stateAtSTP": (string, optional) Trạng thái vật lý ở điều kiện tiêu chuẩn (STP) (ví dụ: "liquid", "solid", "gas").
-- "isSoluble": (boolean, optional) Khả năng tan trong nước.
-- "ionFormation": (object, optional) Các ion tạo thành khi hòa hòa tan trong nước, dạng rắn/lỏng nguyên chất. Ví dụ: {"cation": "H+", "anion": "Cl-"}.
-- "colorWhenDry": (string, optional) Màu sắc của hóa chất khi ở dạng tinh khiết (không hòa tan trong nước, dạng rắn/lỏng nguyên chất).
-- "density_g_cm3": (number, optional) Khối lượng riêng (g/cm³) nếu có.
-- "boiling_point_C": (number or string, optional) Nhiệt độ sôi (°C) nếu có.
-- "melting_point_C": (number or string, optional) Nhiệt độ nóng chảy (°C) nếu có.
-- "isFlammable": (boolean, optional) Có dễ cháy không.
-- "isReactive": (boolean, optional) Có dễ phản ứng không.
-- "specificReactions": (array of objects, optional) Một mảng các phản ứng đặc trưng, mỗi object có dạng {"with": "tên_chất_khác", "phenomenon": "mô_tả_hiện_tượng_trực_quan", "product": "sản_phẩm_chính"}. Chỉ bao gồm 1-2 phản ứng quan trọng nhất.
+            const prompt = `Provide detailed information about the chemical "${chemicalName}" as a single JSON object. The JSON object must include the following fields:
+- "name": (string) Full and common name of the chemical.
+- "formula": (string) Chemical formula.
+- "smiles": (string, optional) SMILES code of the chemical. If not found or not applicable, return an empty string "".
+- "appearance": (string) Brief description of the physical form and state at normal conditions (e.g., colorless liquid, white crystalline solid).
+- "solutionColor": (string) An RGBA string representing the color of the chemical's solution when dissolved in water (if applicable). Example: "rgba(255, 100, 100, 0.6)" for light pink, or "rgba(255, 255, 255, 0.1)" if colorless/very faint. If it's an insoluble solid, can be "rgba(200,200,200,0.7)".
+- "description": (string) More detailed description of basic physical, chemical properties, applications, or safety warnings (if any).
+- "type": (string, optional) Type of chemical (e.g., "acid", "base", "salt", "metal", "nonmetal", "oxide", "organic").
+- "strength": (string, optional) Strength (e.g., "strong", "weak", "moderate"). Applies to acids, bases.
+- "stateAtSTP": (string, optional) Physical state at standard temperature and pressure (STP) (e.g., "liquid", "solid", "gas").
+- "isSoluble": (boolean, optional) Solubility in water.
+- "ionFormation": (object, optional) Ions formed when dissolved in water, or in pure solid/liquid form. Example: {"cation": "H+", "anion": "Cl-"}.
+- "colorWhenDry": (string, optional) Color of the chemical in its pure form (not dissolved in water, pure solid/liquid).
+- "density_g_cm3": (number, optional) Density (g/cm³) if available.
+- "boiling_point_C": (number or string, optional) Boiling point (°C) if available.
+- "melting_point_C": (number or string, optional) Melting point (°C) if available.
+- "isFlammable": (boolean, optional) Is it flammable.
+- "isReactive": (boolean, optional) Is it reactive.
+- "safetyPrecautions": (string, optional) Specific safety warnings or handling instructions (e.g., "Highly corrosive. Wear gloves and eye protection.").
+- "specificReactions": (array of objects, optional) An array of characteristic reactions, each object in the form {"with": "other_chemical_name", "phenomenon": "visual_phenomenon_description", "product": "main_product", "reactionDurationSeconds": (number, optional) seconds for reaction, e.g., 1 for fast, 5 for slow, default to 1}. Only include 1-2 most important reactions.
 
-Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn bản giải thích nào khác xung quanh JSON. Ví dụ cho Ethanol:
-{
-  "name": "Ethanol",
-  "formula": "C2H5OH",
-  "smiles": "CCO",
-  "appearance": "Chất lỏng không màu, dễ bay hơi.",
-  "solutionColor": "rgba(255, 255, 255, 0.1)",
-  "description": "Là một loại rượu phổ biến, có trong đồ uống có cồn và được dùng làm dung môi công nghiệp, nhiên liệu.",
-  "type": "organic",
-  "strength": "weak",
-  "stateAtSTP": "liquid",
-  "isSoluble": true,
-  "ionFormation": null,
-  "colorWhenDry": "Không màu",
-  "density_g_cm3": 0.789,
-  "boiling_point_C": 78.37,
-  "melting_point_C": -114.1,
-  "isFlammable": true,
-  "isReactive": true,
-  "specificReactions": []
-}
+Ensure the output IS ONLY that JSON object, with no other explanatory text around the JSON.
 `;
             try {
                 const result = await geminiModel.generateContent(prompt);
@@ -884,12 +1129,12 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 currentSelectedAiChemical = JSON.parse(rawJsonText);
                 confirmChemicalDetails.innerHTML = `<pre class="bg-gray-100 p-2 rounded text-xs">${JSON.stringify(currentSelectedAiChemical, null, 2)}</pre>`;
                 confirmSaveModal.classList.remove('hidden');
-                showToast(`AI đã định nghĩa hóa chất: ${currentSelectedAiChemical.name || chemicalName}. Vui lòng xác nhận để lưu.`);
+                showToast(`AI has defined the chemical: ${currentSelectedAiChemical.name || chemicalName}. Please confirm to save.`);
             } catch (error) {
-                console.error("Lỗi khi gọi Gemini API hoặc parse JSON:", error);
-                showToast(`Lỗi AI: ${error.message}`); 
+                console.error("Error calling Gemini API or parsing JSON:", error);
+                showToast(`AI Error: ${error.message}`); 
                 geminiApiErrorNotice.classList.remove('hidden');
-                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Gemini API connection error!</p><p>${error.message}. Please check your Firebase project configuration and ensure the Generative Language API is enabled in Google Cloud Console.</p>`;
                 currentSelectedAiChemical = null;
             } finally {
                 // Restore button state
@@ -901,12 +1146,12 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
         cancelSaveChemical.addEventListener('click', () => {
             confirmSaveModal.classList.add('hidden');
             currentSelectedAiChemical = null;
-            showToast("Đã hủy lưu hóa chất.");
+            showToast("Chemical save cancelled.");
         });
 
         confirmSaveChemicalButtonAction.addEventListener('click', async () => {
             if (!currentSelectedAiChemical || !currentUserId) {
-                showToast("Không có thông tin hóa chất để lưu hoặc bạn chưa đăng nhập.");
+                showToast("No chemical info to save or you are not logged in.");
                 confirmSaveModal.classList.add('hidden');
                 return;
             }
@@ -918,14 +1163,14 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 };
                 const chemicalCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "customChemicals");
                 const docRef = await addDoc(chemicalCollectionRef, chemicalToSave);
-                console.log("Hóa chất đã được lưu với ID: ", docRef.id);
-                showToast(`Đã lưu hóa chất: ${currentSelectedAiChemical.name || 'Chưa có tên'}`);
+                console.log("Chemical saved with ID: ", docRef.id);
+                showToast(`Saved chemical: ${currentSelectedAiChemical.name || 'Unnamed'}`);
                 chemicalNameInput.value = '';
                 currentSelectedAiChemical = null;
                 confirmSaveModal.classList.add('hidden');
             } catch (error) {
-                console.error("Lỗi khi lưu hóa chất vào Firestore:", error);
-                showToast(`Lỗi khi lưu hóa chất: ${error.message}`);
+                console.error("Error saving chemical to Firestore:", error);
+                showToast(`Error saving chemical: ${error.message}`);
             }
         });
 
@@ -938,7 +1183,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 return;
             }
             console.log(`[loadUserChemicals] Loading chemicals for user: ${currentUserId} and appId: ${appId}`);
-            userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Đang tải hóa chất...</p>'; 
+            userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Loading chemicals...</p>'; 
             if (unsubscribeUserChemicals) {
                 unsubscribeUserChemicals();
                 console.log("[loadUserChemicals] Unsubscribed from previous chemical listener.");
@@ -968,8 +1213,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                     displayFilteredChemicals();
                 }
             }, (error) => {
-                console.error(`Lỗi khi lắng nghe thay đổi hóa chất cho user ${currentUserId}:`, error);
-                userChemicalsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Lỗi tải danh sách hóa chất.</p>';
+                console.error(`Error listening to chemical changes for user ${currentUserId}:`, error);
+                userChemicalsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Error loading chemical list.</p>';
             });
         }
         
@@ -998,7 +1243,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             });
 
             if (filteredChemicals.length === 0) {
-                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Không tìm thấy hóa chất nào phù hợp.</p>';
+                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">No matching chemicals found.</p>';
                 return;
             }
 
@@ -1032,7 +1277,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
 
                 const nameEl = document.createElement('h4');
                 nameEl.className = 'font-semibold truncate';
-                nameEl.textContent = chemicalData.name || "Chưa đặt tên";
+                nameEl.textContent = chemicalData.name || "Unnamed";
                 chemicalElement.appendChild(nameEl);
                 const formulaEl = document.createElement('p');
                 formulaEl.className = 'text-gray-600 truncate';
@@ -1043,14 +1288,14 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 tooltip.className = 'chemical-tooltip';
                 tooltip.innerHTML = `
                     <strong>${chemicalData.name || 'N/A'}</strong> (${chemicalData.formula || 'N/A'})<br>
-                    ${chemicalData.description ? chemicalData.description.substring(0, 100) + (chemicalData.description.length > 100 ? '...' : '') : 'Không mô tả.'}
+                    ${chemicalData.description ? chemicalData.description.substring(0, 100) + (chemicalData.description.length > 100 ? '...' : '') : 'No description.'}
                 `;
                 chemicalElement.appendChild(tooltip);
 
                 const infoIcon = document.createElement('button');
                 infoIcon.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`;
                 infoIcon.className = 'info-icon-btn';
-                infoIcon.title = "Xem thông tin chi tiết";
+                infoIcon.title = "View detailed information";
                 infoIcon.onclick = (e) => {
                     e.stopPropagation();
                     displayChemicalInfoInPanel(chemicalData);
@@ -1060,18 +1305,18 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 const deleteButton = document.createElement('button');
                 deleteButton.innerHTML = '&times;';
                 deleteButton.className = 'absolute top-1 right-1 text-xs bg-red-400 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center focus:outline-none delete-btn';
-                deleteButton.title = "Xóa hóa chất này";
+                deleteButton.title = "Delete this chemical";
                 deleteButton.style.lineHeight = '1';
                 deleteButton.onclick = async (e) => {
                     e.stopPropagation();
-                    const confirmation = confirm(`Bạn có chắc muốn xóa hóa chất "${chemicalData.name || 'này'}" không?`);
+                    const confirmation = confirm(`Are you sure you want to delete chemical "${chemicalData.name || 'this one'}"?`);
                     if (confirmation) {
                         try {
                             await deleteDoc(doc(db, "artifacts", appId, "users", currentUserId, "customChemicals", chemicalId));
-                            showToast("Đã xóa hóa chất.");
+                            showToast("Chemical deleted.");
                         } catch (error) {
-                            console.error("Lỗi khi xóa hóa chất:", error);
-                            showToast(`Lỗi xóa: ${error.message}`);
+                            console.error("Error deleting chemical:", error);
+                            showToast(`Delete error: ${error.message}`);
                         }
                     }
                 };
@@ -1091,21 +1336,21 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
 
         async function saveExperiment() {
             if (!currentUserId) {
-                showToast("Vui lòng đăng nhập để lưu thí nghiệm.");
+                showToast("Please log in to save experiments.");
                 return;
             }
             const name = experimentNameInput.value.trim();
             if (!name) {
-                showToast("Vui lòng nhập tên thí nghiệm.");
+                showToast("Please enter an experiment name.");
                 return;
             }
             if (konvaChemicalsInBeaker.length === 0) {
-                showToast("Cốc thí nghiệm trống. Vui lòng thêm hóa chất trước khi lưu.");
+                showToast("The beaker is empty. Please add chemicals before saving.");
                 return;
             }
 
             const originalButtonText = saveExperimentButton.innerHTML;
-            saveExperimentButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang lưu...';
+            saveExperimentButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Saving...';
             saveExperimentButton.disabled = true;
 
             try {
@@ -1123,11 +1368,11 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 if (!querySnapshot.empty) {
                     const existingDoc = querySnapshot.docs[0];
                     await setDoc(doc(db, "artifacts", appId, "users", currentUserId, "experiments", existingDoc.id), experimentDataToSave);
-                    showToast(`Đã cập nhật thí nghiệm "${name}"!`);
+                    showToast(`Experiment "${name}" updated!`);
                     currentExperimentId = existingDoc.id;
                 } else {
                     const docRef = await addDoc(experimentsRef, experimentDataToSave);
-                    showToast(`Đã lưu thí nghiệm "${name}" với ID: ${docRef.id}`);
+                    showToast(`Experiment "${name}" saved with ID: ${docRef.id}`);
                     currentExperimentId = docRef.id;
                 }
                 currentExperimentData = experimentDataToSave;
@@ -1136,8 +1381,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 updateExperimentNameDisplay();
             }
             catch (error) {
-                console.error("Lỗi khi lưu thí nghiệm:", error);
-                showToast(`Lỗi khi lưu thí nghiệm: ${error.message}`);
+                console.error("Error saving experiment:", error);
+                showToast(`Error saving experiment: ${error.message}`);
             } finally {
                 saveExperimentButton.innerHTML = originalButtonText;
                 saveExperimentButton.disabled = false;
@@ -1150,7 +1395,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 return;
             }
             console.log(`[loadUserExperiments] Loading experiments for user: ${currentUserId}`);
-            userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Đang tải thí nghiệm...</p>';
+            userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Loading experiments...</p>';
             if (unsubscribeUserExperiments) {
                 unsubscribeUserExperiments();
                 console.log("[loadUserExperiments] Unsubscribed from previous experiment listener.");
@@ -1161,7 +1406,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 console.log(`[onSnapshot] Received ${querySnapshot.docs.length} experiment documents.`);
                 userExperimentsContainer.innerHTML = '';
                 if (querySnapshot.empty) {
-                    userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>';
+                    userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">You haven\'t saved any experiments yet.</p>';
                     return;
                 }
                 querySnapshot.forEach((docSnap) => {
@@ -1170,11 +1415,11 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                     const experimentElement = document.createElement('div');
                     experimentElement.className = 'p-3 bg-blue-100 border border-blue-300 rounded shadow-sm flex flex-col justify-between';
                     experimentElement.innerHTML = `
-                        <h4 class="font-semibold text-blue-800 text-sm mb-1 truncate">${experiment.name || 'Thí nghiệm không tên'}</h4>
-                        <p class="text-xs text-blue-600 mb-2">${experiment.chemicals ? experiment.chemicals.length : 0} hóa chất</p>
+                        <h4 class="font-semibold text-blue-800 text-sm mb-1 truncate">${experiment.name || 'Unnamed experiment'}</h4>
+                        <p class="text-xs text-blue-600 mb-2">${experiment.chemicals ? experiment.chemicals.length : 0} chemicals</p>
                         <div class="flex gap-2 text-xs mt-auto">
-                            <button class="flex-grow bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded load-experiment-btn" data-experiment-id="${experimentId}">Tải</button>
-                            <button class="flex-grow bg-red-400 hover:bg-red-500 text-white py-1 px-2 rounded delete-experiment-btn" data-experiment-id="${experimentId}" data-experiment-name="${experiment.name || 'thí nghiệm này'}">Xóa</button>
+                            <button class="flex-grow bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded load-experiment-btn" data-experiment-id="${experimentId}">Load</button>
+                            <button class="flex-grow bg-red-400 hover:bg-red-500 text-white py-1 px-2 rounded delete-experiment-btn" data-experiment-id="${experimentId}" data-experiment-name="${experiment.name || 'this experiment'}">Delete</button>
                         </div>
                     `;
                     userExperimentsContainer.appendChild(experimentElement);
@@ -1189,13 +1434,13 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                             if (docSnap.exists()) {
                                 const expData = docSnap.data();
                                 loadExperimentIntoBeaker(expData, expId);
-                                showToast(`Đã tải thí nghiệm "${expData.name}"!`);
+                                showToast(`Experiment "${expData.name}" loaded!`);
                             } else {
-                                showToast("Thí nghiệm không tìm thấy.");
+                                showToast("Experiment not found.");
                             }
                         } catch (error) {
-                            console.error("Lỗi khi tải thí nghiệm:", error);
-                            showToast(`Lỗi tải thí nghiệm: ${error.message}`);
+                            console.error("Error loading experiment:", error);
+                            showToast(`Error loading experiment: ${error.message}`);
                         }
                     });
                 });
@@ -1209,8 +1454,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                     });
                 });
             }, (error) => {
-                console.error(`Lỗi khi lắng nghe thay đổi thí nghiệm cho user ${currentUserId}:`, error);
-                userExperimentsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Lỗi tải danh sách thí nghiệm.</p>';
+                console.error(`Error listening to experiment changes for user ${currentUserId}:`, error);
+                userExperimentsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Error loading experiment list.</p>';
             });
         }
 
@@ -1229,11 +1474,11 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 });
                 updateKonvaSolutionVisualState(); 
                 triggerKonvaReactionAI();
-                showToast(`Đã tải thí nghiệm "${experimentData.name}".`);
+                showToast(`Loaded experiment "${experimentData.name}".`);
             } else {
                 updateKonvaSolutionVisualState(); 
-                document.getElementById('responseContainer').textContent = "Thí nghiệm đã tải không có hóa chất.";
-                showToast(`Thí nghiệm "${experimentData.name}" không có hóa chất.`);
+                document.getElementById('responseContainer').textContent = "Loaded experiment has no chemicals.";
+                showToast(`Experiment "${experimentData.name}" has no chemicals.`);
             }
             isExperimentModified = false;
             updateExperimentNameDisplay();
@@ -1243,7 +1488,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             if (!currentUserId || !experimentId) return;
             try {
                 await deleteDoc(doc(db, "artifacts", appId, "users", currentUserId, "experiments", experimentId));
-                showToast("Đã xóa thí nghiệm.");
+                showToast("Experiment deleted.");
                 if (currentExperimentId === experimentId) { 
                     resetBeaker(); 
                     currentExperimentId = null;
@@ -1251,8 +1496,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                     experimentNameInput.value = '';
                 }
             } catch (error) {
-                console.error("Lỗi khi xóa thí nghiệm:", error);
-                showToast(`Lỗi xóa thí nghiệm: ${error.message}`);
+                console.error("Error deleting experiment:", error);
+                showToast(`Delete experiment error: ${error.message}`);
             }
             confirmDeleteExperimentModal.classList.add('hidden');
             experimentIdToDelete = null;
@@ -1283,10 +1528,10 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             }
 
             if (userChemicalsContainer) {
-                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Vui lòng đăng nhập để xem hóa chất.</p>';
+                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Please log in to view chemicals.</p>';
             }
             if (userExperimentsContainer) {
-                userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>';
+                userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">You haven\'t saved any experiments yet.</p>';
             }
 
             resetBeaker(); 
@@ -1302,12 +1547,16 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             updateExperimentNameDisplay();
         }
 
-        let konvaStage, konvaLayer, konvaEffectsLayer;
+        let konvaStage, konvaLayer, konvaEffectsLayer, konvaToolsLayer;
         let konvaBeaker, konvaSolution;
         let konvaChemicalsInBeaker = [];
         let konvaBubbleAnimation, konvaSmokeAnimation, konvaPrecipitateAnimation, konvaWaveAnimation;
         let konvaWaveLine;
         let konvaExperimentNameText; 
+        let konvaThermometer, konvaBurner, konvaTestTube, konvaErlenmeyer;
+        let beakerCurrentTemperature = 25; // Default temperature
+        let beakerTemperatureDisplay;
+        let reactionCountdownInterval = null;
 
         const KONVA_INITIAL_STAGE_WIDTH = 600;
         const KONVA_INITIAL_STAGE_HEIGHT = 400;
@@ -1316,6 +1565,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
         const KONVA_BEAKER_BASE_Y = KONVA_INITIAL_STAGE_HEIGHT - KONVA_BEAKER_BASE_SIZE.height - 20;
         const KONVA_MAX_LIQUID_RISE = KONVA_BEAKER_BASE_SIZE.height * 0.7;
         const KONVA_SOLUTION_PADDING_BASE = 8;
+        const BURNER_HEAT_RADIUS_BASE = 100;
+        const BURNER_HEAT_INTENSITY = 0.5; // Degrees Celsius per frame when heating
 
         function initializeLabKonva() {
             console.log("[initializeLabKonva] Initializing Konva stage and objects.");
@@ -1339,6 +1590,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             konvaStage.add(konvaLayer);
             konvaEffectsLayer = new Konva.Layer();
             konvaStage.add(konvaEffectsLayer);
+            konvaToolsLayer = new Konva.Layer(); // New layer for tools
+            konvaStage.add(konvaToolsLayer);
 
             konvaBeaker = new Konva.Rect({
                 x: getKonvaResponsiveValue(KONVA_BEAKER_BASE_X, KONVA_INITIAL_STAGE_WIDTH, currentW),
@@ -1355,7 +1608,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 shadowBlur: getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW), 
                 shadowOffset: { x: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW) },
                 shadowOpacity: 0.5, 
-                name: 'beaker'
+                name: 'beaker',
+                id: 'beaker-main'
             });
             konvaLayer.add(konvaBeaker);
 
@@ -1409,7 +1663,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             konvaExperimentNameText = new Konva.Text({
                 x: getKonvaResponsiveValue(KONVA_INITIAL_STAGE_WIDTH / 2, KONVA_INITIAL_STAGE_WIDTH, currentW),
                 y: getKonvaResponsiveValue(20, KONVA_INITIAL_STAGE_HEIGHT, currentH),
-                text: 'Thí nghiệm mới',
+                text: 'New Experiment',
                 fontSize: getKonvaResponsiveValue(18, KONVA_INITIAL_STAGE_WIDTH, currentW),
                 fill: '#374151', 
                 align: 'center',
@@ -1418,6 +1672,10 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
             konvaExperimentNameText.offsetX(konvaExperimentNameText.width() / 2);
             konvaLayer.add(konvaExperimentNameText);
             updateExperimentNameDisplay(); 
+            
+            beakerTemperatureDisplay = document.getElementById('beaker-temperature-display');
+            updateBeakerTemperatureDisplay();
+
 
             updateKonvaSolutionVisualState();
             window.addEventListener('resize', fitKonvaStageToParent);
@@ -1443,6 +1701,8 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                     konvaBeaker.getLayer().batchDraw();
                 }
             });
+
+            initializeLabTools(); // Initialize drag and drop for tools
         }
 
         function getKonvaResponsiveValue(baseValue, baseStageDim, currentDim) {
@@ -1451,6 +1711,182 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
         function getKonvaResponsiveSize(baseDim, baseStageDim, currentDim) { 
             const scale = currentDim / baseStageDim;
             return { width: baseDim * scale, height: baseDim * scale }; 
+        }
+
+        function updateBeakerTemperatureDisplay() {
+            if (beakerTemperatureDisplay) {
+                beakerTemperatureDisplay.textContent = `Nhiệt độ: ${beakerCurrentTemperature.toFixed(1)} °C`;
+                beakerTemperatureDisplay.classList.remove('hidden');
+            }
+        }
+
+        function initializeLabTools() {
+            const toolsContainer = document.getElementById('tools-container');
+            if (!toolsContainer) return;
+
+            toolsContainer.querySelectorAll('.tool-item').forEach(toolElement => {
+                toolElement.addEventListener('mousedown', (e) => {
+                    const toolType = toolElement.dataset.toolType;
+                    createKonvaTool(toolType, e.clientX, e.clientY);
+                });
+                toolElement.addEventListener('touchstart', (e) => {
+                    const toolType = toolElement.dataset.toolType;
+                    createKonvaTool(toolType, e.touches[0].clientX, e.touches[0].clientY);
+                });
+            });
+        }
+
+        function createKonvaTool(toolType, clientX, clientY) {
+            if (!konvaStage || !konvaToolsLayer) return;
+
+            const stageRect = konvaStage.container().getBoundingClientRect();
+            const startX = clientX - stageRect.left;
+            const startY = clientY - stageRect.top;
+
+            let toolGroup;
+            const toolBaseSize = 60;
+            const scaledToolWidth = getKonvaResponsiveValue(toolBaseSize, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width());
+            const scaledToolHeight = getKonvaResponsiveValue(toolBaseSize, KONVA_INITIAL_STAGE_HEIGHT, konvaStage.height());
+
+            if (toolType === 'thermometer') {
+                const bulbRadius = scaledToolWidth / 4;
+                const stemWidth = scaledToolWidth / 8;
+                const stemHeight = scaledToolHeight * 0.8;
+
+                toolGroup = new Konva.Group({
+                    x: startX, y: startY, draggable: true, name: 'lab-tool', id: `tool-${Date.now()}`,
+                    attrs: { toolType: toolType, heatSource: false } // Default to not a heat source
+                });
+
+                const stem = new Konva.Rect({
+                    x: -stemWidth / 2, y: -stemHeight, width: stemWidth, height: stemHeight,
+                    fill: 'rgba(200,200,200,0.8)', stroke: 'black', strokeWidth: 1, cornerRadius: 2,
+                    name: 'stem'
+                });
+                const mercury = new Konva.Rect({
+                    x: -stemWidth / 4, y: -stemHeight + (stemHeight * (1 - (beakerCurrentTemperature / 100))), // Adjust mercury height
+                    width: stemWidth / 2, height: stemHeight * (beakerCurrentTemperature / 100), // Adjust mercury height
+                    fill: 'red', name: 'mercury'
+                });
+                const bulb = new Konva.Circle({
+                    x: 0, y: 0, radius: bulbRadius, fill: 'red', stroke: 'black', strokeWidth: 1,
+                    name: 'bulb'
+                });
+                const glassBulb = new Konva.Circle({ // Transparent layer over mercury bulb
+                    x: 0, y: 0, radius: bulbRadius, fill: 'rgba(255,255,255,0.1)', stroke: 'black', strokeWidth: 1,
+                    name: 'glass-bulb'
+                });
+                
+                toolGroup.add(stem);
+                toolGroup.add(mercury);
+                toolGroup.add(bulb);
+                toolGroup.add(glassBulb);
+                toolGroup.pivot({ x: 0, y: 0 }); // Set pivot to the bottom of the bulb for easier dragging
+                
+            } else if (toolType === 'burner') {
+                const baseWidth = scaledToolWidth * 1.5;
+                const baseHeight = scaledToolHeight * 0.4;
+                const flameHeight = scaledToolHeight * 0.6;
+
+                toolGroup = new Konva.Group({
+                    x: startX, y: startY, draggable: true, name: 'lab-tool', id: `tool-${Date.now()}`,
+                    attrs: { toolType: toolType, heatSource: true, isHeating: false } // This tool is a heat source
+                });
+
+                const burnerBase = new Konva.Rect({
+                    x: -baseWidth / 2, y: 0, width: baseWidth, height: baseHeight,
+                    fill: 'gray', stroke: 'black', strokeWidth: 1, cornerRadius: 5
+                });
+
+                const flame = new Konva.RegularPolygon({
+                    x: 0, y: -flameHeight, sides: 3, radius: flameHeight / 2,
+                    fill: 'orange', rotation: 180, visible: false,
+                    id: 'burner-flame'
+                });
+
+                toolGroup.add(burnerBase);
+                toolGroup.add(flame);
+
+            } else if (toolType === 'test-tube') {
+                const tubeWidth = scaledToolWidth * 0.5;
+                const tubeHeight = scaledToolHeight * 1.2;
+
+                toolGroup = new Konva.Group({
+                    x: startX, y: startY, draggable: true, name: 'lab-tool', id: `tool-${Date.now()}`,
+                    attrs: { toolType: toolType, heatSource: false }
+                });
+
+                const tube = new Konva.Rect({
+                    x: -tubeWidth / 2, y: -tubeHeight, width: tubeWidth, height: tubeHeight,
+                    fill: 'rgba(255,255,255,0.7)', stroke: 'black', strokeWidth: 1,
+                    cornerRadius: {
+                        upperLeft: tubeWidth / 2, upperRight: tubeWidth / 2, lowerLeft: 5, lowerRight: 5
+                    }
+                });
+                toolGroup.add(tube);
+            } else if (toolType === 'erlenmeyer') {
+                const flaskBaseWidth = scaledToolWidth * 1.5;
+                const flaskBodyHeight = scaledToolHeight * 0.7;
+                const flaskNeckWidth = scaledToolWidth * 0.4;
+                const flaskNeckHeight = scaledToolHeight * 0.3;
+
+                toolGroup = new Konva.Group({
+                    x: startX, y: startY, draggable: true, name: 'lab-tool', id: `tool-${Date.now()}`,
+                    attrs: { toolType: toolType, heatSource: false }
+                });
+
+                const body = new Konva.Line({
+                    points: [
+                        -flaskBaseWidth / 2, flaskBodyHeight, // Bottom-left
+                        flaskBaseWidth / 2, flaskBodyHeight,  // Bottom-right
+                        flaskNeckWidth / 2, 0,             // Top-right of body
+                        -flaskNeckWidth / 2, 0              // Top-left of body
+                    ],
+                    fill: 'rgba(255,255,255,0.7)', stroke: 'black', strokeWidth: 1, closed: true
+                });
+
+                const neck = new Konva.Rect({
+                    x: -flaskNeckWidth / 2, y: -flaskNeckHeight, width: flaskNeckWidth, height: flaskNeckHeight,
+                    fill: 'rgba(255,255,255,0.7)', stroke: 'black', strokeWidth: 1, cornerRadius: 2
+                });
+
+                toolGroup.add(body);
+                toolGroup.add(neck);
+                toolGroup.pivot({ x: 0, y: flaskBodyHeight }); // Pivot at the bottom center of the body
+            }
+
+            if (toolGroup) {
+                konvaToolsLayer.add(toolGroup);
+                toolGroup.moveToTop();
+
+                toolGroup.on('dragstart', function() {
+                    this.moveToTop();
+                    this.scale({x: 1.1, y: 1.1});
+                    konvaToolsLayer.batchDraw();
+                });
+
+                toolGroup.on('dragend', function() {
+                    this.scale({x: 1, y: 1});
+                    konvaToolsLayer.batchDraw();
+                });
+
+                toolGroup.on('click tap', function(e) {
+                    if (this.isDragging() || (this.getStage() && this.getStage().isDragging && this.getStage().isDragging())) {
+                        return;
+                    }
+                    if (this.attrs.toolType === 'burner') {
+                        const flame = this.findOne('#burner-flame');
+                        const isHeating = !this.attrs.isHeating;
+                        this.attrs.isHeating = isHeating;
+                        flame.visible(isHeating);
+                        showToast(`Burner turned ${isHeating ? 'on' : 'off'}.`);
+                    } else if (this.attrs.toolType === 'thermometer') {
+                        showToast(`Beaker temperature: ${beakerCurrentTemperature.toFixed(1)} °C`);
+                    }
+                    konvaToolsLayer.batchDraw();
+                });
+            }
+            konvaToolsLayer.batchDraw();
         }
 
 
@@ -1487,7 +1923,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
 
         function addKonvaChemicalFromData(chemicalData, firestoreId) {
             if (!konvaStage || !konvaLayer) {
-                showToast("Phòng thí nghiệm chưa sẵn sàng.");
+                showToast("Lab is not ready.");
                 return;
             }
             console.log(`[addKonvaChemicalFromData] Creating Konva object for: ${chemicalData.name}`);
@@ -1596,7 +2032,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 const chemicalRect = this.getClientRect();
 
                 if (Konva.Util.haveIntersection(beakerRect, chemicalRect)) {
-                    showToast(`Đã thêm ${droppedChemicalData.name} vào cốc.`);
+                    showToast(`Added ${droppedChemicalData.name} to beaker.`);
 
                     const bottleNeckNode = this.findOne('.bottle-neck');
                     const dropStartX = this.x() + bottleNeckNode.x() + bottleNeckNode.width() / 2;
@@ -1655,7 +2091,7 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                             konvaLayer.batchDraw();
                         }
                     }).play();
-                    showToast("Hóa chất không được thả vào cốc.");
+                    showToast("Chemical not dropped into beaker.");
                 }
                 konvaBeaker.stroke('black');
                 konvaBeaker.strokeWidth(Math.max(1, getKonvaResponsiveValue(2.5, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width())));
@@ -1669,19 +2105,22 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
         async function triggerKonvaReactionAI() {
             if (konvaChemicalsInBeaker.length < 1) {
                 stopAllKonvaEffects(); updateKonvaSolutionVisualState();
-                document.getElementById('responseContainer').textContent = "Cốc thí nghiệm trống hoặc chỉ có một hóa chất (chưa đủ để phản ứng).";
+                document.getElementById('responseContainer').textContent = "Beaker is empty or has only one chemical (not enough for reaction).";
                 return;
             }
             if (!geminiModel) {
-                 showToast("Mô hình AI chưa sẵn sàng để phân tích phản ứng.");
+                 showToast("AI model not ready to analyze reactions.");
                  document.getElementById("gemini-api-error-notice").classList.remove('hidden'); 
                  return;
             }
             stopAllKonvaEffects();
+            document.getElementById('reaction-timer').classList.add('hidden'); // Hide timer
+            safetyAlertContainer.classList.add('hidden'); // Hide safety alert
+
             const chemicalNamesInBeaker = konvaChemicalsInBeaker.map(c => c.name).join(', ');
-            document.getElementById('responseContainer').textContent = `Đang phân tích phản ứng giữa: ${chemicalNamesInBeaker}...`;
+            document.getElementById('responseContainer').textContent = `Analyzing reaction between: ${chemicalNamesInBeaker}...`;
             const originalPromptButtonText = sendPromptButtonLab.innerHTML;
-            sendPromptButtonLab.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang gửi...';
+            sendPromptButtonLab.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sending...';
             sendPromptButtonLab.disabled = true;
 
             const detailedChemicalsForAI = konvaChemicalsInBeaker.map(chem => ({
@@ -1693,25 +2132,35 @@ Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn 
                 isSoluble: chem.isSoluble,
                 ionFormation: chem.ionFormation,
                 solutionColor: chem.solutionColor,
-                specificReactions: chem.specificReactions
+                specificReactions: chem.specificReactions,
+                safetyPrecautions: chem.safetyPrecautions
             }));
-            const prompt = `Phân tích phản ứng hóa học có thể xảy ra khi trộn các hóa chất sau trong một cốc thí nghiệm: ${JSON.stringify(detailedChemicalsForAI, null, 2)}.
-Hãy cung cấp kết quả dưới dạng một đối tượng JSON duy nhất, bao gồm các trường sau:
-- "reactionOccurred": (boolean) Phản ứng có xảy ra không.
-- "mainReactionEquation": (string, optional) Phương trình hóa học chính của phản ứng (nếu có).
-- "products": (array of strings, optional) Tên các sản phẩm chính tạo thành.
+            
+            // Check for heat source
+            const isHeating = konvaToolsLayer.find(node => node.name() === 'lab-tool' && node.attrs.toolType === 'burner' && node.attrs.isHeating && Konva.Util.haveIntersection(node.getClientRect(), konvaBeaker.getClientRect())).length > 0;
+            const currentTemp = beakerCurrentTemperature;
+
+            const prompt = `Analyze the chemical reaction that might occur when mixing the following chemicals in a beaker, considering current temperature ${currentTemp}°C and whether heat is applied (${isHeating}): ${JSON.stringify(detailedChemicalsForAI, null, 2)}.
+Provide the result as a single JSON object, including the following fields:
+- "reactionOccurred": (boolean) Does a reaction occur.
+- "mainReactionEquation": (string, optional) The main chemical equation of the reaction (if any).
+- "products": (array of strings, optional) Names of the main products formed.
 - "visualPhenomena": {
-    "colorChangeTo": (string, optional) Màu RGBA mới của dung dịch (ví dụ: "rgba(100,255,100,0.7)"). Nếu không đổi màu đáng kể, có thể bỏ qua hoặc giữ màu hỗn hợp.
-    "gasEvolution": (boolean, optional) Có sủi bọt khí không.
-    "gasEvolutionIntensity": (string, optional) Cường độ sủi bọt khí (ví dụ: "low", "medium", "high", "vigorous").
-    "precipitateFormation": (boolean, optional) Có tạo kết tủa không.
-    "precipitateColorRGBA": (string, optional) Mã màu RGBA của kết tủa (ví dụ: "rgba(255, 255, 200, 0.9)").
-    "smokeOrVapor": (boolean, optional) Có khói hoặc hơi bay lên không.
-    "smokeIntensity": (string, optional) Cường độ khói/hơi (ví dụ: "low", "medium", "high").
-    "temperatureEffect": (string, optional) Mô tả thay đổi nhiệt độ (ví dụ: "exothermic_strong" (tỏa nhiệt mạnh), "endothermic" (thu nhiệt), "negligible" (không đáng kể)).
+    "colorChangeTo": (string, optional) New RGBA color of the solution (e.g., "rgba(100,255,100,0.7)"). If no significant color change, can be omitted or keep mixed color.
+    "gasEvolution": (boolean, optional) Are gas bubbles formed.
+    "gasEvolutionIntensity": (string, optional) Intensity of gas bubbling (e.g., "low", "medium", "high", "vigorous").
+    "precipitateFormation": (boolean, optional) Is a precipitate formed.
+    "precipitateColorRGBA": (string, optional) RGBA color code of the precipitate (e.g., "rgba(255, 255, 200, 0.9)").
+    "smokeOrVapor": (boolean, optional) Is smoke or vapor emitted.
+    "smokeIntensity": (string, optional) Intensity of smoke/vapor (e.g., "low", "medium", "high").
+    "temperatureEffect": (string, optional) Description of temperature change (e.g., "exothermic_strong" (strongly exothermic), "endothermic" (endothermic), "negligible" (negligible)).
   }
-- "explanation": (string) Giải thích chi tiết về hiện tượng, phản ứng và kết quả.
-Output chỉ là JSON object.
+- "explanation": (string) Detailed explanation of the phenomena, reaction, and results.
+- "safetyWarning": (string, optional) Any safety precautions or warnings related to the reaction (e.g., "Strongly exothermic reaction, protective equipment needed.").
+- "reactionDurationSeconds": (number, optional) Estimated time in seconds for the reaction to complete (e.g., 1 for instant, 5 for slow). Default to 1 if not specified.
+- "conditionsMet": (boolean) Are all necessary conditions (like temperature, catalyst presence, etc.) met for the reaction to occur based on the current lab state?
+- "requiredConditions": (string, optional) If conditions are not met, what are the specific conditions required (e.g., "requires high temperature", "requires catalyst X").
+Output should be ONLY the JSON object.
 `;
             try {
                 const result = await geminiModel.generateContent(prompt);
@@ -1720,27 +2169,72 @@ Output chỉ là JSON object.
                 rawJsonText = rawJsonText.replace(/^```json\s*([\s\S]*?)\s*```$/, '$1').trim();
                 console.log("AI Reaction Analysis Parsed JSON Text:", rawJsonText);
                 const reactionData = JSON.parse(rawJsonText);
-                document.getElementById('responseContainer').innerHTML = `<strong>Giải thích từ AI:</strong><br>${reactionData.explanation || "Không có giải thích."}<br><strong>Phương trình (nếu có):</strong> ${reactionData.mainReactionEquation || "N/A"}<br><strong>Sản phẩm:</strong> ${reactionData.products ? reactionData.products.join(', ') : "N/A"}`;
-                if (reactionData.reactionOccurred && reactionData.visualPhenomena) {
+                
+                document.getElementById('responseContainer').innerHTML = `<strong>AI Explanation:</strong><br>${reactionData.explanation || "No explanation."}<br><strong>Equation (if any):</strong> ${reactionData.mainReactionEquation || "N/A"}<br><strong>Products:</strong> ${reactionData.products ? reactionData.products.join(', ') : "N/A"}`;
+
+                if (reactionData.safetyWarning) {
+                    safetyAlertContainer.textContent = `SAFETY ALERT: ${reactionData.safetyWarning}`;
+                    safetyAlertContainer.classList.remove('hidden');
+                } else {
+                    safetyAlertContainer.classList.add('hidden');
+                }
+
+                if (reactionData.reactionOccurred && reactionData.conditionsMet) {
                     const phenomena = reactionData.visualPhenomena;
-                    if (phenomena.colorChangeTo) konvaSolution.fill(phenomena.colorChangeTo);
+                    if (phenomena.colorChangeTo) {
+                        konvaSolution.fill(phenomena.colorChangeTo);
+                        konvaLayer.batchDraw();
+                    }
 
                     if (phenomena.gasEvolution) startKonvaBubblingEffect(phenomena.gasEvolutionIntensity);
                     if (phenomena.precipitateFormation) startKonvaPrecipitateEffect(phenomena.precipitateColorRGBA);
                     if (phenomena.smokeOrVapor) startKonvaSmokeEffect(phenomena.smokeIntensity);
                     if (phenomena.temperatureEffect) visualizeTemperatureChange(phenomena.temperatureEffect);
+
+                    // Reaction Timer
+                    const duration = reactionData.reactionDurationSeconds || 1;
+                    startReactionCountdown(duration);
+
+                } else {
+                    stopAllKonvaEffects();
+                    if (!reactionData.conditionsMet) {
+                        document.getElementById('responseContainer').innerHTML += `<br><span class="text-red-600 font-bold">Conditions not met for reaction!</span><br>Required: ${reactionData.requiredConditions || 'N/A'}`;
+                    } else if (!reactionData.reactionOccurred) {
+                        document.getElementById('responseContainer').innerHTML += `<br><span class="text-orange-600 font-bold">No significant reaction occurred.</span>`;
+                    }
                 }
             } catch (error) {
-                console.error("Lỗi khi gọi AI phân tích phản ứng:", error);
-                document.getElementById('responseContainer').textContent = `Lỗi AI: ${error.message}`;
+                console.error("Error calling AI for reaction analysis:", error);
+                document.getElementById('responseContainer').textContent = `AI Error: ${error.message}`;
                 geminiApiErrorNotice.classList.remove('hidden');
-                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Gemini API connection error!</p><p>${error.message}. Please check your Firebase project configuration and ensure the Generative Language API is enabled in Google Cloud Console.</p>`;
             } finally {
                 sendPromptButtonLab.innerHTML = originalPromptButtonText;
                 sendPromptButtonLab.disabled = false;
             }
             konvaLayer.batchDraw();
             konvaEffectsLayer.batchDraw();
+        }
+
+        function startReactionCountdown(seconds) {
+            const timerDisplay = document.getElementById('reaction-timer');
+            timerDisplay.classList.remove('hidden');
+            let timeLeft = seconds;
+            timerDisplay.textContent = `Reaction completing in: ${timeLeft}s`;
+
+            if (reactionCountdownInterval) clearInterval(reactionCountdownInterval);
+
+            reactionCountdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    timerDisplay.textContent = `Reaction completing in: ${timeLeft}s`;
+                } else {
+                    timerDisplay.textContent = `Reaction complete!`;
+                    clearInterval(reactionCountdownInterval);
+                    reactionCountdownInterval = null;
+                    setTimeout(() => timerDisplay.classList.add('hidden'), 2000); // Hide after a short delay
+                }
+            }, 1000);
         }
 
         function startKonvaBubblingEffect(intensity = "medium") {
@@ -1857,13 +2351,16 @@ Output chỉ là JSON object.
                 color = 'rgba(255, 69, 0, 0.8)';
                 opacity = 1; 
                 duration = 2;
+                beakerCurrentTemperature += 20 + Math.random() * 10; // Increase temp
             } else if (effectType.includes("endothermic")) {
                 color = 'rgba(0, 191, 255, 0.8)';
                 opacity = 1;
                 duration = 2;
+                beakerCurrentTemperature -= 10 + Math.random() * 5; // Decrease temp
             } else {
                 return;
             }
+            updateBeakerTemperatureDisplay();
 
             const tempIndicator = new Konva.Rect({
                 x: konvaBeaker.x(),
@@ -1895,13 +2392,65 @@ Output chỉ là JSON object.
             if (konvaEffectsLayer) konvaEffectsLayer.batchDraw();
         }
 
+        // Animation for heating effect
+        let heatingAnimation = new Konva.Animation(frame => {
+            if (!konvaBeaker) return;
+
+            const beakerCenter = {
+                x: konvaBeaker.x() + konvaBeaker.width() / 2,
+                y: konvaBeaker.y() + konvaBeaker.height() / 2
+            };
+            const heatRadius = getKonvaResponsiveValue(BURNER_HEAT_RADIUS_BASE, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width());
+
+            let isBeakerHeated = false;
+            konvaToolsLayer.find('.lab-tool').forEach(tool => {
+                if (tool.attrs.toolType === 'burner' && tool.attrs.isHeating) {
+                    const toolCenter = tool.getClientRect();
+                    const distance = Math.sqrt(
+                        Math.pow(beakerCenter.x - toolCenter.x, 2) +
+                        Math.pow(beakerCenter.y - toolCenter.y, 2)
+                    );
+
+                    if (distance < heatRadius) {
+                        isBeakerHeated = true;
+                    }
+                }
+            });
+
+            if (isBeakerHeated) {
+                beakerCurrentTemperature += BURNER_HEAT_INTENSITY * (frame.timeDiff / 1000); // Increase temperature per second
+                if (beakerCurrentTemperature > 100) beakerCurrentTemperature = 100; // Cap at 100 for visual purposes
+            } else {
+                beakerCurrentTemperature -= BURNER_HEAT_INTENSITY * 0.5 * (frame.timeDiff / 1000); // Cool down slowly
+                if (beakerCurrentTemperature < 25) beakerCurrentTemperature = 25; // Floor at 25
+            }
+            updateBeakerTemperatureDisplay();
+
+            // Update thermometer mercury visually
+            konvaToolsLayer.find('.lab-tool[data-tool-type="thermometer"]').forEach(thermometerGroup => {
+                const mercury = thermometerGroup.findOne('.mercury');
+                const stem = thermometerGroup.findOne('.stem');
+                if (mercury && stem) {
+                    const maxMercuryHeight = stem.height();
+                    const newMercuryHeight = maxMercuryHeight * (beakerCurrentTemperature / 100);
+                    mercury.height(newMercuryHeight);
+                    mercury.y(stem.y() + stem.height() - newMercuryHeight);
+                }
+            });
+
+            konvaToolsLayer.batchDraw();
+        }, konvaToolsLayer);
+        heatingAnimation.start();
+
 
         function stopAllKonvaEffects() {
             console.log("[KonvaEffect] Stopping all effects");
             if (konvaBubbleAnimation) { konvaBubbleAnimation.stop(); konvaBubbleAnimation = null; }
             if (konvaSmokeAnimation) { konvaSmokeAnimation.stop(); konvaSmokeAnimation = null; }
             if (konvaPrecipitateAnimation) { konvaPrecipitateAnimation.stop(); konvaPrecipitateAnimation = null; }
-            if (konvaWaveAnimation) { konvaWaveAnimation.stop(); konvaWaveAnimation = null; }
+            if (reactionCountdownInterval) { clearInterval(reactionCountdownInterval); reactionCountdownInterval = null; }
+            document.getElementById('reaction-timer').classList.add('hidden');
+            safetyAlertContainer.classList.add('hidden');
 
             if (konvaEffectsLayer) {
                 konvaEffectsLayer.find('.bubble, .smoke, .precipitate, .temp-indicator, .liquid-drop').forEach(n => n.destroy());
@@ -1912,6 +2461,7 @@ Output chỉ là JSON object.
                 konvaWaveLine.points([]);
                 konvaWaveLine.visible(false);
             }
+            // Restart wave animation if it was stopped by stopAllKonvaEffects, as it's a persistent visual
             if (konvaSolution && konvaSolution.visible() && konvaSolution.height() > 0 && konvaLayer && !konvaWaveAnimation) {
                  const currentW = konvaStage.width();
                  const waveAmplitude = getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW);
@@ -1958,14 +2508,16 @@ Output chỉ là JSON object.
                 konvaSolution.fill('rgba(173, 216, 230, 0.3)');
             }
             if (konvaLayer) konvaLayer.batchDraw();
-            document.getElementById('responseContainer').textContent = "Cốc đã được làm sạch.";
-            showToast("Cốc đã được làm sạch.");
+            document.getElementById('responseContainer').textContent = "Beaker has been cleaned.";
+            showToast("Beaker has been cleaned.");
 
             currentExperimentId = null;
             currentExperimentData = null;
             experimentNameInput.value = '';
             isExperimentModified = false;
             updateExperimentNameDisplay();
+            beakerCurrentTemperature = 25; // Reset temperature
+            updateBeakerTemperatureDisplay();
         }
 
         document.getElementById('resetBeakerButton').addEventListener('click', resetBeaker);
@@ -1979,7 +2531,7 @@ Output chỉ là JSON object.
 
         toggleExperimentManagementButton.addEventListener('click', () => {
             const isHidden = experimentManagementSection.classList.toggle('hidden');
-            toggleExperimentText.textContent = isHidden ? 'Mở Quản Lý Thí Nghiệm' : 'Đóng Quản Lý Thí Nghiệm';
+            toggleExperimentText.textContent = isHidden ? 'Open Experiment Management' : 'Close Experiment Management';
             if (!isHidden) {
                 loadUserExperiments();
             }
@@ -1987,13 +2539,75 @@ Output chỉ là JSON object.
 
         function updateExperimentNameDisplay() {
             if (konvaExperimentNameText && konvaStage) {
-                let name = currentExperimentData ? currentExperimentData.name : 'Thí nghiệm mới';
-                konvaExperimentNameText.text(`Tên thí nghiệm: ${name}${isExperimentModified ? ' *' : ''}`);
+                let name = currentExperimentData ? currentExperimentData.name : 'New Experiment';
+                konvaExperimentNameText.text(`Experiment Name: ${name}${isExperimentModified ? ' *' : ''}`);
                 konvaExperimentNameText.x(getKonvaResponsiveValue(KONVA_INITIAL_STAGE_WIDTH / 2, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()));
                 konvaExperimentNameText.offsetX(konvaExperimentNameText.width() / 2);
                 if (konvaLayer) konvaLayer.batchDraw();
             }
         }
+
+        suggestExperimentButton.addEventListener('click', async () => {
+            if (!geminiModel) {
+                showToast("AI model not ready to suggest experiments.");
+                return;
+            }
+            const prompt = experimentSuggestionPrompt.value.trim();
+            if (!prompt) {
+                showToast("Please enter a topic or desired outcome for the experiment suggestion.");
+                return;
+            }
+            experimentSuggestionResults.innerHTML = '<p class="text-blue-500">Generating suggestions...</p>';
+            suggestExperimentButton.disabled = true;
+
+            const suggestionPrompt = `Suggest a simple chemical experiment based on the following theme/desired outcome: "${prompt}".
+            Provide the suggestion as a JSON object with the following fields:
+            - "title": (string) A concise title for the experiment.
+            - "description": (string) A brief description of the experiment.
+            - "requiredChemicals": (array of strings) Names of 2-3 key chemicals needed.
+            - "expectedPhenomena": (string) What visual phenomena to expect (e.g., "color change", "gas evolution", "precipitate formation", "heat release").
+            - "safetyNotes": (string) Important safety notes.
+            - "steps": (array of strings) 3-5 simple steps to perform the experiment.
+            Return only the JSON object. Example:
+            {
+                "title": "Making a precipitate",
+                "description": "Observe the formation of a solid precipitate from two clear solutions.",
+                "requiredChemicals": ["Lead(II) nitrate", "Potassium iodide"],
+                "expectedPhenomena": "Formation of a bright yellow precipitate.",
+                "safetyNotes": "Lead compounds are toxic. Handle with care.",
+                "steps": [
+                    "Dissolve Lead(II) nitrate in water.",
+                    "Dissolve Potassium iodide in water.",
+                    "Carefully mix the two solutions in a beaker."
+                ]
+            }`;
+
+            try {
+                const result = await geminiModel.generateContent(suggestionPrompt);
+                const response = result.response;
+                let rawJsonText = response.text();
+                rawJsonText = rawJsonText.replace(/^```json\s*([\s\S]*?)\s*```$/, '$1').trim();
+                const suggestion = JSON.parse(rawJsonText);
+
+                experimentSuggestionResults.innerHTML = `
+                    <h5 class="font-bold text-gray-800 mt-2">${suggestion.title}</h5>
+                    <p>${suggestion.description}</p>
+                    <p class="text-xs mt-1"><strong>Required Chemicals:</strong> ${suggestion.requiredChemicals.join(', ')}</p>
+                    <p class="text-xs"><strong>Expected Phenomena:</strong> ${suggestion.expectedPhenomena}</p>
+                    <p class="text-xs text-red-600"><strong>Safety Notes:</strong> ${suggestion.safetyNotes}</p>
+                    <p class="text-xs mt-1 font-semibold">Steps:</p>
+                    <ol class="list-decimal list-inside text-xs">
+                        ${suggestion.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                `;
+            } catch (error) {
+                console.error("Error suggesting experiment:", error);
+                experimentSuggestionResults.innerHTML = `<p class="text-red-500">Error generating suggestion: ${error.message}</p>`;
+            } finally {
+                suggestExperimentButton.disabled = false;
+            }
+        });
+
 
         function fitKonvaStageToParent() {
             const container = document.getElementById('konva-outer-container');
@@ -2120,8 +2734,108 @@ Output chỉ là JSON object.
                     }
                 });
             }
+
+            // Resize tools on the Konva layer
+            konvaToolsLayer.find('.lab-tool').forEach(toolGroup => {
+                const toolType = toolGroup.attrs.toolType;
+                const toolBaseSize = 60;
+                const scaledToolWidth = getKonvaResponsiveValue(toolBaseSize, KONVA_INITIAL_STAGE_WIDTH, currentW);
+                const scaledToolHeight = getKonvaResponsiveValue(toolBaseSize, KONVA_INITIAL_STAGE_HEIGHT, currentH);
+
+                if (toolType === 'thermometer') {
+                    const bulbRadius = scaledToolWidth / 4;
+                    const stemWidth = scaledToolWidth / 8;
+                    const stemHeight = scaledToolHeight * 0.8;
+
+                    const stem = toolGroup.findOne('.stem');
+                    const mercury = toolGroup.findOne('.mercury');
+                    const bulb = toolGroup.findOne('.bulb');
+                    const glassBulb = toolGroup.findOne('.glass-bulb');
+
+                    if (stem) {
+                        stem.width(stemWidth);
+                        stem.height(stemHeight);
+                        stem.x(-stemWidth / 2);
+                        stem.y(-stemHeight);
+                    }
+                    if (mercury) {
+                        mercury.width(stemWidth / 2);
+                        mercury.x(-stemWidth / 4);
+                        // Mercury height will be updated by heatingAnimation
+                    }
+                    if (bulb) {
+                        bulb.radius(bulbRadius);
+                        bulb.x(0);
+                        bulb.y(0);
+                    }
+                    if (glassBulb) {
+                        glassBulb.radius(bulbRadius);
+                        glassBulb.x(0);
+                        glassBulb.y(0);
+                    }
+                } else if (toolType === 'burner') {
+                    const baseWidth = scaledToolWidth * 1.5;
+                    const baseHeight = scaledToolHeight * 0.4;
+                    const flameHeight = scaledToolHeight * 0.6;
+
+                    const burnerBase = toolGroup.findOne('Rect'); // Assuming burner base is the first Rect
+                    const flame = toolGroup.findOne('RegularPolygon'); // Assuming flame is a RegularPolygon
+
+                    if (burnerBase) {
+                        burnerBase.width(baseWidth);
+                        burnerBase.height(baseHeight);
+                        burnerBase.x(-baseWidth / 2);
+                        burnerBase.y(0);
+                    }
+                    if (flame) {
+                        flame.radius(flameHeight / 2);
+                        flame.y(-flameHeight);
+                    }
+                } else if (toolType === 'test-tube') {
+                    const tubeWidth = scaledToolWidth * 0.5;
+                    const tubeHeight = scaledToolHeight * 1.2;
+
+                    const tube = toolGroup.findOne('Rect');
+                    if (tube) {
+                        tube.width(tubeWidth);
+                        tube.height(tubeHeight);
+                        tube.x(-tubeWidth / 2);
+                        tube.y(-tubeHeight);
+                        tube.cornerRadius({
+                            upperLeft: tubeWidth / 2, upperRight: tubeWidth / 2, lowerLeft: 5, lowerRight: 5
+                        });
+                    }
+                } else if (toolType === 'erlenmeyer') {
+                    const flaskBaseWidth = scaledToolWidth * 1.5;
+                    const flaskBodyHeight = scaledToolHeight * 0.7;
+                    const flaskNeckWidth = scaledToolWidth * 0.4;
+                    const flaskNeckHeight = scaledToolHeight * 0.3;
+
+                    const body = toolGroup.findOne('Line');
+                    const neck = toolGroup.findOne('Rect');
+
+                    if (body) {
+                        body.points([
+                            -flaskBaseWidth / 2, flaskBodyHeight,
+                            flaskBaseWidth / 2, flaskBodyHeight,
+                            flaskNeckWidth / 2, 0,
+                            -flaskNeckWidth / 2, 0
+                        ]);
+                    }
+                    if (neck) {
+                        neck.width(flaskNeckWidth);
+                        neck.height(flaskNeckHeight);
+                        neck.x(-flaskNeckWidth / 2);
+                        neck.y(-flaskNeckHeight);
+                    }
+                    toolGroup.pivot({ x: 0, y: flaskBodyHeight });
+                }
+            });
+
+
             konvaStage.batchDraw();
             if (konvaEffectsLayer) konvaEffectsLayer.batchDraw();
+            if (konvaToolsLayer) konvaToolsLayer.batchDraw(); // Redraw tools layer after resizing
         }
 
     </script>
