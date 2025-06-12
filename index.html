@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lab - Vẽ Phân tử 2D từ SMILES</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase Core (luôn cần thiết) -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"></script>
+    <!-- Firebase Authentication -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"></script>
+    <!-- Firebase Firestore -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js"></script>
+    <!-- Firebase AI Logic SDK -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.8.1/firebase-ai.js"></script>
+    <!-- Konva.js -->
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+    <!-- NEW: Smiles-Drawer library for drawing molecules -->
+    <script src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
+    <style>
+        body { font-family: sans-serif; overscroll-behavior: none; }
+        #konva-stage-container canvas { max-width: 100%; height: auto !important; }
+        .custom-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none; }
+        .custom-toast.show { opacity: 1; }
+        /* Style cho form xác thực */
+        .auth-form-container { max-width: 400px; margin: 2rem auto; padding: 2rem; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .lab-hidden { display: none !important; } /* Ẩn phòng thí nghiệm khi chưa đăng nhập */
+        .api-error-notice { background-color: #fff3cd; border-color: #ffeeba; color: #856404; padding: .75rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: .25rem; }
+         .info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            max-width: 90%;
+            width: 500px;
+            z-index: 5000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            max-height: 80vh; /* Giới hạn chiều cao */
+            overflow-y: auto; /* Thêm cuộn nếu nội dung dài */
+        }
+        .info-panel.hidden {
+            display: none;
+        }
+        .info-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 4999;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .info-panel-overlay.hidden {
+            display: none;
+        }
+        .confirm-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .confirm-modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+        /* NEW: Styles for smaller chemical cards */
+        #userChemicalsContainer .chemical-card {
+            padding: 0.4rem; /* Reduced padding */
+            font-size: 0.75rem; /* Base font size */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            height: 90px; /* Reduced fixed height */
+            justify-content: space-between;
+        }
+        #userChemicalsContainer .chemical-card h4 {
+            font-size: 0.75rem; /* Smaller font size for name */
+            margin-bottom: 0.25rem;
+            flex-shrink: 0;
+            margin-top: 0.5rem; /* Pushed down to avoid buttons */
+            line-height: 1.2; /* Tighter line height */
+            max-height: 2.4em; /* Limit to 2 lines */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Add ellipsis if overflow */
+        }
+        #userChemicalsContainer .chemical-card p {
+            font-size: 1.125rem; /* Larger font size for formula */
+            font-weight: bold; /* Make formula bold */
+            margin-bottom: auto;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center formula horizontally */
+        }
+        /* Responsive grid for chemical cards */
+        #userChemicalsContainer {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.4rem;
+        }
+        @media (min-width: 640px) { /* sm */
+            #userChemicalsContainer {
+                grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            }
+        }
+        @media (min-width: 768px) { /* md */
+            #userChemicalsContainer {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            }
+        }
+        @media (min-width: 1024px) { /* lg */
+            #userChemicalsContainer {
+                grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            }
+        }
+        @media (min-width: 1280px) { /* xl */
+            #userChemicalsContainer {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+
+        /* Tooltip styles */
+        .chemical-tooltip {
+            position: absolute;
+            top: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0; /* Square tooltip */
+            font-size: 0.75rem;
+            white-space: normal;
+            max-width: 250px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        .chemical-card:hover .chemical-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        .chemical-tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent rgba(0, 0, 0, 0.85) transparent;
+        }
+
+        /* NEW: Type Indicator and Info Button Styles */
+        .type-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+        }
+        .info-icon-btn {
+            position: absolute;
+            top: 0.25rem;
+            left: 0.25rem;
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #4B5563;
+            border-radius: 9999px;
+            width: 1.25rem;
+            height: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.9;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .info-icon-btn:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 1);
+        }
+        .info-icon-btn svg {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+        .delete-btn {
+            z-index: 10;
+            top: 0.25rem;
+            right: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Khu vực Xác thực -->
+    <div id="auth-container" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+            <p class="font-bold">Lưu ý quan trọng:</p>
+            <p>1. Để sử dụng chức năng đăng nhập/đăng ký bằng Email, bạn cần kích hoạt phương thức "Email/Password" trong Firebase Console -> Authentication -> Sign-in method.</p>
+            <p class="mt-2">2. Để chức năng "Tạo Hóa Chất" hoạt động, hãy đảm bảo dịch vụ "Generative Language API" (hoặc Vertex AI) đã được bật cho dự án của bạn trong Google Cloud Console.</p>
+        </div>
+        <div id="user-status" class="w-full max-w-md mb-4 p-3 bg-white rounded shadow text-center">
+            <p id="user-email-display">Chưa đăng nhập</p>
+            <button id="signOutButton" class="hidden mt-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded text-sm">Đăng xuất</button>
+        </div>
+
+        <div id="login-form-container" class="auth-form-container">
+            <h2 class="text-2xl font-bold text-blue-700 text-center mb-6">Đăng Nhập</h2>
+            <input type="email" id="loginEmail" placeholder="Email" class="w-full p-2 mb-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="loginPassword" placeholder="Mật khẩu" class="w-full p-2 mb-4 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+            <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mb-2">Đăng Nhập</button>
+            <p class="text-center text-sm">Chưa có tài khoản? <a href="#" id="showRegisterLink" class="text-blue-600 hover:underline">Đăng ký ngay</a></p>
+        </div>
+
+        <div id="register-form-container" class="auth-form-container hidden">
+            <h2 class="text-2xl font-bold text-green-700 text-center mb-6">Đăng Ký</h2>
+            <input type="email" id="registerEmail" placeholder="Email" class="w-full p-2 mb-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500">
+            <input type="password" id="registerPassword" placeholder="Mật khẩu (ít nhất 6 ký tự)" class="w-full p-2 mb-4 border border-gray-300 rounded focus:ring-2 focus:ring-green-500">
+            <button id="registerButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded mb-2">Đăng Ký</button>
+            <p class="text-center text-sm">Đã có tài khoản? <a href="#" id="showLoginLink" class="text-green-600 hover:underline">Đăng nhập</a></p>
+        </div>
+    </div>
+
+    <!-- Khu vực Phòng Thí Nghiệm (ban đầu bị ẩn) -->
+    <div id="lab-section" class="lab-hidden p-4 md:p-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-blue-700 text-center mb-6">Phòng Thí Nghiệm Mô Phỏng AI</h1>
+
+        <div class="mb-6 p-4 bg-white rounded shadow">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">Tạo Hóa Chất Mới (AI Hỗ Trợ)</h3>
+            <div id="gemini-api-error-notice" class="api-error-notice hidden">
+                <p class="font-bold">Lỗi kết nối Gemini API!</p>
+                <p>Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="chemicalNameInput" placeholder="Nhập tên hóa chất (ví dụ: Axit Sunfuric)" class="flex-grow p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500">
+                <button id="createChemicalButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">Tạo Hóa Chất</button>
+            </div>
+        </div>
+
+        <!-- NEW: Button to toggle Experiment Management Section -->
+        <div class="mb-6">
+            <button id="toggleExperimentManagementButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150">
+                <span id="toggleExperimentText">Mở Quản Lý Thí Nghiệm</span>
+            </button>
+        </div>
+
+        <!-- NEW SECTION: Quản lý Thí Nghiệm (hidden by default) -->
+        <div id="experimentManagementSection" class="mb-6 p-4 bg-white rounded shadow hidden">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">Quản Lý Thí Nghiệm</h3>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="experimentNameInput" placeholder="Nhập tên thí nghiệm" class="flex-grow p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+                <button id="saveExperimentButton" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded">Lưu Thí Nghiệm Hiện Tại</button>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">Các Thí Nghiệm Đã Lưu:</h4>
+            <div id="userExperimentsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 min-h-[100px] bg-gray-50 p-2 rounded border">
+                <p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>
+            </div>
+        </div>
+        <!-- END NEW SECTION -->
+
+        <div class="mb-6 p-4 bg-white rounded shadow">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">Hóa Chất Của Bạn</h3>
+            <!-- NEW: Search Input for Chemicals -->
+            <div class="mb-4">
+                <input type="text" id="chemicalSearchInput" placeholder="Tìm kiếm hóa chất (tên, công thức, loại...)" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500">
+            </div>
+            <div id="userChemicalsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 min-h-[100px] bg-gray-50 p-2 rounded border">
+                <p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu hóa chất nào.</p>
+            </div>
+        </div>
+
+        <div id="lab-container" class="flex flex-col md:flex-row md:justify-around w-full max-w-6xl mx-auto gap-4">
+            <div id="konva-outer-container" class="w-full md:w-2/3 bg-gray-200 border border-gray-300 rounded-lg shadow p-2 flex justify-center items-center touch-none">
+                <div id="konva-stage-container"></div>
+            </div>
+
+            <div id="ai-controls-container" class="w-full md:w-1/3 flex flex-col bg-white p-4 border border-gray-300 rounded-lg shadow">
+                <h2 class="text-xl font-semibold text-blue-600 mb-3">Kết quả & Tương tác AI</h2>
+                <h3 class="text-lg font-semibold text-blue-600 mb-2">Phản hồi từ Gemini:</h3>
+                <div id="responseContainer" class="p-3 border border-gray-200 bg-gray-50 rounded-md min-h-[150px] whitespace-pre-wrap flex-grow overflow-y-auto mb-4">
+                    Chưa có phản hồi...
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Gửi lời nhắc thủ công:</h3>
+                <div id="controls" class="flex flex-col">
+                    <textarea id="promptInput" rows="3" placeholder="Nhập lời nhắc thủ công ở đây..." class="w-full p-2 border border-gray-300 rounded-md mb-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    <button id="sendPromptButtonLab" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mb-2">Gửi tới Gemini (Thí nghiệm)</button>
+                </div>
+                <button id="resetBeakerButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 mt-4">Làm sạch cốc</button>
+            </div>
+        </div>
+    </div>
+    <div id="customToast" class="custom-toast"></div>
+
+    <div id="confirmSaveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 md:w-1/3">
+            <h3 class="text-xl font-bold mb-4">Xác nhận Lưu Hóa Chất</h3>
+            <div id="confirmChemicalDetails" class="mb-4 text-sm max-h-60 overflow-y-auto">
+                {/* Chi tiết hóa chất từ AI sẽ được chèn vào đây */}
+            </div>
+            <p class="mb-4">Bạn có muốn lưu hóa chất này vào kho lưu trữ cá nhân không?</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancelSaveChemical" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">Hủy</button>
+                <button id="confirmSaveChemicalButtonAction" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel cho hóa chất -->
+    <div id="info-panel-overlay" class="info-panel-overlay hidden"></div>
+    <div id="info-panel" class="info-panel hidden">
+        <button id="info-panel-close-x" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl font-bold">&times;</button>
+        <h3 id="info-panel-title" class="text-2xl font-bold mb-3 text-blue-700"></h3>
+        <div id="info-panel-description" class="text-gray-700 text-base leading-relaxed"></div>
+        
+        <!-- NEW: Section for 2D Molecule Drawing -->
+        <h4 class="font-semibold mt-4 mb-2 text-gray-700">Cấu trúc phân tử 2D:</h4>
+        <div id="molecule-drawing-container" class="bg-white p-2 rounded border border-gray-300 flex justify-center items-center min-h-[200px]">
+            <canvas id="molecule-canvas" width="300" height="300"></canvas>
+            <p id="smiles-not-found" class="text-gray-500 hidden">Không tìm thấy mã SMILES để vẽ cấu trúc.</p>
+        </div>
+        
+        <button id="info-panel-close-button" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md w-full">Đóng</button>
+    </div>
+
+    <!-- Modal xác nhận xóa thí nghiệm -->
+    <div id="confirmDeleteExperimentModal" class="confirm-modal hidden">
+        <div class="confirm-modal-content">
+            <h3 class="text-xl font-bold mb-4">Xác nhận xóa thí nghiệm</h3>
+            <p id="confirmDeleteExperimentText" class="mb-4">Bạn có chắc chắn muốn xóa thí nghiệm "<span class="font-semibold" id="experimentToDeleteName"></span>" không?</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancelDeleteExperiment" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">Hủy</button>
+                <button id="confirmDeleteExperiment" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">Xóa</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Import các hàm từ Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            addDoc,
+            collection,
+            query,
+            where,
+            getDocs,
+            onSnapshot,
+            serverTimestamp,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai.js";
+
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnWoc5pBabK2OfFeCau61X1PioBR5gBD8", // <-- Thay bằng API key của bạn từ Firebase Console
+            authDomain: "ailab-9ef87.firebaseapp.com",
+            projectId: "ailab-9ef87",
+            storageBucket: "ailab-9ef87.appspot.com",
+            messagingSenderId: "558122624068",
+            appId: "1:558122624068:web:bde003000c6568f5e74811"
+        };
+        const app = initializeApp(firebaseConfig);
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        console.log("Firebase App, Auth, and Firestore initialized with new config!");
+
+        let geminiModel;
+        try {
+            const ai = getAI(app, { backend: new GoogleAIBackend() });
+            geminiModel = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
+            console.log("Generative Model instance created with model 'gemini-2.0-flash'!");
+        } catch (e) {
+            console.error("Lỗi khi khởi tạo AI Model:", e);
+            document.getElementById("gemini-api-error-notice").classList.remove('hidden');
+            document.getElementById("gemini-api-error-notice").innerHTML = `<p class="font-bold">Lỗi khởi tạo AI Model!</p><p>${e.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+        }
+
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ai-lab-app';
+        let currentUserId = null;
+        let currentSelectedAiChemical = null;
+
+        // NEW: Experiment related variables
+        let currentExperimentId = null; // ID of the currently loaded/saved experiment
+        let currentExperimentData = null; // Data of the currently loaded experiment
+        let isExperimentModified = false; // Track if the current experiment in beaker is modified
+
+        const loginFormContainer = document.getElementById('login-form-container');
+        const registerFormContainer = document.getElementById('register-form-container');
+        const authContainer = document.getElementById('auth-container');
+        const labSection = document.getElementById('lab-section');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const signOutButton = document.getElementById('signOutButton');
+        const loginEmailInput = document.getElementById('loginEmail');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const loginButton = document.getElementById('loginButton');
+        const registerEmailInput = document.getElementById('registerEmail');
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const registerButton = document.getElementById('registerButton');
+        const showRegisterLink = document.getElementById('showRegisterLink');
+        const showLoginLink = document.getElementById('showLoginLink');
+        const chemicalNameInput = document.getElementById('chemicalNameInput');
+        const createChemicalButton = document.getElementById('createChemicalButton');
+        const userChemicalsContainer = document.getElementById('userChemicalsContainer');
+        const confirmSaveModal = document.getElementById('confirmSaveModal');
+        const confirmChemicalDetails = document.getElementById('confirmChemicalDetails');
+        const cancelSaveChemical = document.getElementById('cancelSaveChemical');
+        const confirmSaveChemicalButtonAction = document.getElementById('confirmSaveChemicalButtonAction');
+        const geminiApiErrorNotice = document.getElementById('gemini-api-error-notice');
+
+        const infoPanel = document.getElementById('info-panel');
+        const infoPanelOverlay = document.getElementById('info-panel-overlay');
+        const infoPanelTitle = document.getElementById('info-panel-title');
+        const infoPanelDescription = document.getElementById('info-panel-description');
+        const infoPanelCloseButton = document.getElementById('info-panel-close-button');
+        const infoPanelCloseX = document.getElementById('info-panel-close-x');
+
+        // NEW: Chemical Search Input
+        const chemicalSearchInput = document.getElementById('chemicalSearchInput');
+
+        // NEW: Experiment DOM elements
+        const toggleExperimentManagementButton = document.getElementById('toggleExperimentManagementButton');
+        const experimentManagementSection = document.getElementById('experimentManagementSection');
+        const toggleExperimentText = document.getElementById('toggleExperimentText');
+        const experimentNameInput = document.getElementById('experimentNameInput');
+        const saveExperimentButton = document.getElementById('saveExperimentButton');
+        const userExperimentsContainer = document.getElementById('userExperimentsContainer');
+        const confirmDeleteExperimentModal = document.getElementById('confirmDeleteExperimentModal');
+        const confirmDeleteExperimentText = document.getElementById('confirmDeleteExperimentText');
+        const experimentToDeleteName = document.getElementById('experimentToDeleteName');
+        const cancelDeleteExperiment = document.getElementById('cancelDeleteExperiment');
+        const confirmDeleteExperiment = document.getElementById('confirmDeleteExperiment');
+
+        let experimentIdToDelete = null; // To store ID of experiment to delete
+
+        // Stored chemicals for filtering
+        let allUserChemicals = [];
+
+        // NEW: Default chemicals data
+        const DEFAULT_CHEMICALS_DATA = [
+            {
+                name: "Nước",
+                formula: "H2O",
+                smiles: "O",
+                appearance: "Chất lỏng trong suốt, không màu.",
+                solutionColor: "rgba(173, 216, 230, 0.5)",
+                description: "Dung môi phổ biến nhất, cần thiết cho sự sống. Là một oxide lưỡng tính yếu.",
+                type: "oxide",
+                strength: "neutral",
+                stateAtSTP: "liquid",
+                isSoluble: true,
+                ionFormation: {"cation": "H+", "anion": "OH-"},
+                colorWhenDry: "Không màu",
+                density_g_cm3: 1,
+                boiling_point_C: 100,
+                melting_point_C: 0,
+                isFlammable: false,
+                isReactive: false,
+                specificReactions: []
+            },
+            {
+                name: "Axit Clohydric",
+                formula: "HCl",
+                smiles: "Cl",
+                appearance: "Chất lỏng không màu, bốc khói trong không khí ẩm.",
+                solutionColor: "rgba(255, 100, 100, 0.1)", // Hồng nhạt
+                description: "Là một axit mạnh, ăn mòn nhiều kim loại. Được sử dụng rộng rãi trong công nghiệp và phòng thí nghiệm.",
+                type: "acid",
+                strength: "strong",
+                stateAtSTP: "liquid",
+                isSoluble: true,
+                ionFormation: {"cation": "H+", "anion": "Cl-"},
+                colorWhenDry: "Không màu",
+                density_g_cm3: 1.18,
+                boiling_point_C: "Khoảng -85 (khan) đến 110 (dung dịch 20.2%)",
+                isFlammable: false,
+                isReactive: true,
+                specificReactions: [
+                    {"with": "NaOH", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt.", "product": "NaCl, H2O"},
+                    {"with": "Zn", "phenomenon": "Sủi bọt khí H2.", "product": "ZnCl2, H2"}
+                ]
+            },
+            {
+                name: "Natri Hydroxit",
+                formula: "NaOH",
+                smiles: "[Na+].[OH-]",
+                appearance: "Chất rắn màu trắng, hút ẩm mạnh.",
+                solutionColor: "rgba(100, 100, 255, 0.1)", // Xanh nhạt
+                description: "Là một bazơ mạnh, tan nhiều trong nước, tạo dung dịch kiềm ăn mòn. Thường được gọi là xút ăn da.",
+                type: "base",
+                strength: "strong",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Na+", "anion": "OH-"},
+                colorWhenDry: "Trắng",
+                density_g_cm3: 2.13,
+                melting_point_C: 318,
+                boiling_point_C: 1388,
+                isFlammable: false,
+                isReactive: true,
+                specificReactions: [
+                    {"with": "HCl", "phenomenon": "Phản ứng trung hòa, tỏa nhiệt.", "product": "NaCl, H2O"},
+                    {"with": "CuCl2", "phenomenon": "Tạo kết tủa xanh lam Cu(OH)2.", "product": "Cu(OH)2, NaCl"}
+                ]
+            },
+            {
+                name: "Đồng(II) Sunfat",
+                formula: "CuSO4",
+                smiles: "[Cu+2].[O-]S(=O)(=O)[O-]",
+                appearance: "Chất rắn tinh thể màu xanh lam.",
+                solutionColor: "rgba(0, 0, 255, 0.4)", // Xanh đậm
+                description: "Muối đồng, tan tốt trong nước tạo dung dịch màu xanh. Được dùng làm thuốc diệt nấm, thuốc trừ sâu.",
+                type: "salt",
+                strength: "neutral",
+                stateAtSTP: "solid",
+                isSoluble: true,
+                ionFormation: {"cation": "Cu2+", "anion": "SO42-"},
+                colorWhenDry: "Xanh lam",
+                density_g_cm3: 2.286,
+                melting_point_C: 150, // decomposes
+                isFlammable: false,
+                isReactive: false,
+                specificReactions: [
+                    {"with": "NaOH", "phenomenon": "Tạo kết tủa xanh lam Cu(OH)2.", "product": "Cu(OH)2, Na2SO4"},
+                    {"with": "Fe", "phenomenon": "Sắt bị ăn mòn, tạo đồng kim loại màu đỏ nâu.", "product": "FeSO4, Cu"}
+                ]
+            }
+        ];
+
+        function showToast(message) {
+            const toast = document.getElementById('customToast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            } else {
+                console.warn("Custom toast element not found. Message:", message);
+            }
+        }
+
+        async function callGeminiAPI(promptText) {
+            const responseContainer = document.getElementById("responseContainer");
+
+            if (!geminiModel) {
+                const errorMessage = "Mô hình AI chưa được khởi tạo. Vui lòng kiểm tra console để biết lỗi.";
+                if (responseContainer) {
+                    responseContainer.innerText = errorMessage;
+                }
+                console.error(errorMessage);
+                return;
+            }
+            if (!promptText || !promptText.trim()) {
+                if (typeof showToast === 'function') {
+                    showToast("Vui lòng nhập lời nhắc cho Gemini.");
+                }
+                return;
+            }
+
+            if (responseContainer) {
+                responseContainer.textContent = "Đang gửi yêu cầu đến Gemini...";
+            }
+            console.log("Calling generic Gemini API with prompt:", promptText);
+
+            try {
+                // Using the Firebase AI Logic SDK to generate content
+                const result = await geminiModel.generateContent(promptText);
+                const response = result.response;
+                const text = response.text();
+                if(responseContainer) {
+                    responseContainer.innerHTML = `<strong>Phản hồi từ AI:</strong><br>${text}`;
+                }
+                console.log("Response text from generic Gemini API:", text);
+            } catch (error) {
+                console.error("Lỗi khi gọi Gemini API (chung):", error);
+                if (responseContainer) {
+                    responseContainer.innerHTML = `<span class="text-red-600 font-bold">Lỗi Gemini: ${error.message}.</span>`;
+                }
+                 // Show API error notice only if it's an actual API error, not a prompt issue.
+                geminiApiErrorNotice.classList.remove('hidden');
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+            }
+        }
+
+        function displayChemicalInfoInPanel(chemicalData) {
+            if (chemicalData && infoPanel && infoPanelTitle && infoPanelDescription && infoPanelOverlay) {
+                infoPanelTitle.textContent = chemicalData.name || "Thông tin Hóa chất";
+                infoPanelDescription.innerHTML = `
+                    <p><strong>Công thức:</strong> ${chemicalData.formula || 'N/A'}</p>
+                    <p><strong>Mã SMILES:</strong> ${chemicalData.smiles || 'N/A'}</p>
+                    <p><strong>Dạng:</strong> ${chemicalData.appearance || 'N/A'}</p>
+                    <p><strong>Loại:</strong> ${chemicalData.type || 'N/A'}</p>
+                    <p><strong>Độ mạnh:</strong> ${chemicalData.strength || 'N/A'}</p>
+                    <p><strong>Trạng thái chuẩn:</strong> ${chemicalData.stateAtSTP || 'N/A'}</p>
+                    <p><strong>Khả năng tan trong nước:</strong> ${chemicalData.isSoluble !== undefined ? (chemicalData.isSoluble ? 'Tan' : 'Không tan') : 'N/A'}</p>
+                    <p><strong>Màu dung dịch:</strong> <span style="display:inline-block; width:20px; height:20px; background-color:${chemicalData.solutionColor || 'transparent'}; border: 1px solid #ccc; vertical-align: middle;"></span> ${chemicalData.solutionColor || 'N/A'}</p>
+                    <p><strong>Màu khi khô:</strong> ${chemicalData.colorWhenDry || 'N/A'}</p>
+                    ${chemicalData.ionFormation ? `<p><strong>Tạo ion:</strong> Cation: ${chemicalData.ionFormation.cation || 'N/A'}, Anion: ${chemicalData.ionFormation.anion || 'N/A'}</p>` : ''}
+                    <p class="mt-3"><strong>Mô tả chi tiết:</strong> ${chemicalData.description || "Không có mô tả chi tiết."}</p>
+                    ${chemicalData.density_g_cm3 ? `<p><strong>Khối lượng riêng:</strong> ${chemicalData.density_g_cm3} g/cm³</p>` : ''}
+                    ${chemicalData.boiling_point_C ? `<p><strong>Nhiệt độ sôi:</strong> ${chemicalData.boiling_point_C} °C</p>` : ''}
+                    ${chemicalData.melting_point_C ? `<p><strong>Nhiệt độ nóng chảy:</strong> ${chemicalData.melting_point_C} °C</p>` : ''}
+                    ${chemicalData.isFlammable !== undefined ? `<p><strong>Dễ cháy:</strong> ${chemicalData.isFlammable ? 'Có' : 'Không'}</p>` : ''}
+                    ${chemicalData.isReactive !== undefined ? `<p><strong>Dễ phản ứng:</strong> ${chemicalData.isReactive ? 'Có' : 'Không'}</p>` : ''}
+                    ${chemicalData.specificReactions && chemicalData.specificReactions.length > 0 ? `
+                        <h4 class="font-semibold mt-3 mb-1">Phản ứng đặc trưng:</h4>
+                        <ul class="list-disc list-inside">
+                            ${chemicalData.specificReactions.map(r => `<li>Với ${r.with}: ${r.phenomenon} (Sản phẩm: ${r.product})</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                `;
+
+                // NEW: Logic to draw molecule from SMILES string
+                const canvas = document.getElementById('molecule-canvas');
+                const smilesNotFound = document.getElementById('smiles-not-found');
+                const drawingContainer = document.getElementById('molecule-drawing-container');
+
+                if (chemicalData.smiles && chemicalData.smiles.trim() !== "") {
+                    canvas.classList.remove('hidden');
+                    smilesNotFound.classList.add('hidden');
+                    drawingContainer.classList.remove('hidden');
+
+                    let smilesDrawer = new SmilesDrawer.Drawer({ width: 300, height: 300 });
+
+                    SmilesDrawer.parse(chemicalData.smiles, function(tree) {
+                        smilesDrawer.draw(tree, 'molecule-canvas', 'light', false);
+                    }, function(err) {
+                        console.error("Lỗi SmilesDrawer:", err);
+                        canvas.classList.add('hidden');
+                        smilesNotFound.textContent = "Lỗi khi vẽ cấu trúc từ mã SMILES.";
+                        smilesNotFound.classList.remove('hidden');
+                    });
+                } else {
+                    canvas.classList.add('hidden');
+                    smilesNotFound.textContent = "Không tìm thấy mã SMILES để vẽ cấu trúc.";
+                    smilesNotFound.classList.remove('hidden');
+                    drawingContainer.classList.remove('hidden');
+                }
+
+                infoPanel.classList.remove('hidden');
+                infoPanelOverlay.classList.remove('hidden');
+                setTimeout(() => {
+                    infoPanel.style.opacity = '1';
+                    infoPanel.style.transform = 'translate(-50%, -50%) scale(1)';
+                    infoPanelOverlay.style.opacity = '1';
+                }, 10);
+            } else {
+                console.warn("Could not display info panel. Data or panel elements missing.");
+            }
+        }
+
+        function hideInfoPanel() {
+            if (infoPanel && infoPanelOverlay) {
+                infoPanel.style.opacity = '0';
+                infoPanel.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                infoPanelOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    infoPanel.classList.add('hidden');
+                    infoPanelOverlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+        if (infoPanelCloseButton) infoPanelCloseButton.addEventListener('click', hideInfoPanel);
+        if (infoPanelCloseX) infoPanelCloseX.addEventListener('click', hideInfoPanel);
+        if (infoPanelOverlay) infoPanelOverlay.addEventListener('click', hideInfoPanel);
+
+
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginFormContainer.classList.add('hidden');
+            registerFormContainer.classList.remove('hidden');
+        });
+
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerFormContainer.classList.add('hidden');
+            loginFormContainer.classList.remove('hidden');
+        });
+
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                console.log("Firebase Auth persistence set to local.");
+            })
+            .catch((error) => {
+                console.error("Error setting auth persistence:", error);
+            });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("User logged in:", currentUserId, user.email);
+                userEmailDisplay.textContent = `Đã đăng nhập với: ${user.email} (ID: ${currentUserId.substring(0,6)}...)`;
+                signOutButton.classList.remove('hidden');
+                authContainer.classList.add('lab-hidden');
+                labSection.classList.remove('lab-hidden');
+                loadUserChemicals();
+                loadUserExperiments(); // NEW: Load user's experiments
+                initializeLabKonva();
+            } else {
+                currentUserId = null;
+                console.log("User logged out or not logged in.");
+                userEmailDisplay.textContent = "Chưa đăng nhập";
+                signOutButton.classList.add('hidden');
+                authContainer.classList.remove('lab-hidden');
+                labSection.classList.add('lab-hidden');
+                clearLabOnLogout();
+            }
+        });
+
+        loginButton.addEventListener('click', async () => {
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+            if (!email || !password) {
+                showToast("Vui lòng nhập email và mật khẩu.");
+                return;
+            }
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast("Đăng nhập thành công!");
+                loginEmailInput.value = '';
+                loginPasswordInput.value = '';
+            } catch (error) {
+                console.error("Lỗi đăng nhập:", error);
+                if (typeof showToast === 'function') {
+                    showToast(`Lỗi đăng nhập: ${error.message}`);
+                } else {
+                    console.error("showToast is not defined in loginButton catch. Error:", `Lỗi đăng nhập: ${error.message}`);
+                }
+            }
+        });
+
+        registerButton.addEventListener('click', async () => {
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            if (!email || !password) {
+                showToast("Vui lòng nhập email và mật khẩu.");
+                return;
+            }
+            if (password.length < 6) {
+                showToast("Mật khẩu phải có ít nhất 6 ký tự.");
+                return;
+            }
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showToast("Đăng ký thành công! Đang chuyển đến đăng nhập...");
+                registerEmailInput.value = '';
+                registerPasswordInput.value = '';
+                showLoginLink.click();
+            } catch (error) {
+                console.error("Lỗi đăng ký:", error);
+                if (typeof showToast === 'function') {
+                    showToast(`Lỗi đăng ký: ${error.message}. Hãy đảm bảo phương thức Email/Password đã được bật trong Firebase Console.`);
+                } else {
+                    console.error("showToast is not defined in registerButton catch. Error:", `Lỗi đăng ký: ${error.message}`);
+                }
+            }
+        });
+
+        signOutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showToast("Đã đăng xuất.");
+            } catch (error) {
+                console.error("Lỗi đăng xuất:", error);
+                if (typeof showToast === 'function') {
+                    showToast(`Lỗi đăng xuất: ${error.message}`);
+                }
+            }
+        });
+
+        createChemicalButton.addEventListener('click', async () => {
+            if (!currentUserId) {
+                showToast("Vui lòng đăng nhập để tạo hóa chất.");
+                return;
+            }
+            if (!geminiModel) {
+                 showToast("Mô hình AI chưa sẵn sàng để tạo hóa chất.");
+                 document.getElementById("gemini-api-error-notice").classList.remove('hidden'); // Ensure error notice is visible
+                 return;
+            }
+
+            const chemicalName = chemicalNameInput.value.trim();
+            if (!chemicalName) {
+                showToast("Vui lòng nhập tên hóa chất.");
+                return;
+            }
+            showToast("Đang liên hệ với AI để định nghĩa hóa chất..."); 
+
+            // Show loading state for button
+            const originalButtonText = createChemicalButton.innerHTML;
+            createChemicalButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang tạo...';
+            createChemicalButton.disabled = true;
+
+
+            geminiApiErrorNotice.classList.add('hidden'); 
+            currentSelectedAiChemical = null;
+
+            // UPDATED PROMPT: Added "smiles" field request
+            const prompt = `Cung cấp thông tin chi tiết về hóa chất "${chemicalName}" dưới dạng một đối tượng JSON. JSON object phải bao gồm các trường sau:
+- "name": (string) Tên đầy đủ và phổ biến của hóa chất.
+- "formula": (string) Công thức hóa học.
+- "smiles": (string, optional) Mã SMILES của hóa chất. Nếu không tìm thấy hoặc không áp dụng, trả về một chuỗi rỗng "".
+- "appearance": (string) Mô tả ngắn về hình dạng, trạng thái ở điều kiện thường (ví dụ: chất lỏng không màu, chất rắn tinh thể màu trắng).
+- "solutionColor": (string) Một chuỗi RGBA đại diện cho màu sắc của dung dịch hóa chất khi hòa tan trong nước (nếu có thể). Ví dụ: "rgba(255, 100, 100, 0.6)" cho màu hồng nhạt, hoặc "rgba(255, 255, 255, 0.1)" nếu không màu/rất nhạt. Nếu là chất rắn không tan, có thể để "rgba(200,200,200,0.7)".
+- "description": (string) Mô tả chi tiết hơn về tính chất vật lý, hóa học cơ bản, ứng dụng hoặc cảnh báo an toàn (nếu có).
+- "type": (string, optional) Loại hóa chất (ví dụ: "acid", "base", "salt", "metal", "nonmetal", "oxide", "organic").
+- "strength": (string, optional) Độ mạnh (ví dụ: "strong", "weak", "moderate"). Áp dụng cho acid, base.
+- "stateAtSTP": (string, optional) Trạng thái vật lý ở điều kiện tiêu chuẩn (STP) (ví dụ: "liquid", "solid", "gas").
+- "isSoluble": (boolean, optional) Khả năng tan trong nước.
+- "ionFormation": (object, optional) Các ion tạo thành khi hòa hòa tan trong nước, dạng rắn/lỏng nguyên chất. Ví dụ: {"cation": "H+", "anion": "Cl-"}.
+- "colorWhenDry": (string, optional) Màu sắc của hóa chất khi ở dạng tinh khiết (không hòa tan trong nước, dạng rắn/lỏng nguyên chất).
+- "density_g_cm3": (number, optional) Khối lượng riêng (g/cm³) nếu có.
+- "boiling_point_C": (number or string, optional) Nhiệt độ sôi (°C) nếu có.
+- "melting_point_C": (number or string, optional) Nhiệt độ nóng chảy (°C) nếu có.
+- "isFlammable": (boolean, optional) Có dễ cháy không.
+- "isReactive": (boolean, optional) Có dễ phản ứng không.
+- "specificReactions": (array of objects, optional) Một mảng các phản ứng đặc trưng, mỗi object có dạng {"with": "tên_chất_khác", "phenomenon": "mô_tả_hiện_tượng_trực_quan", "product": "sản_phẩm_chính"}. Chỉ bao gồm 1-2 phản ứng quan trọng nhất.
+
+Hãy đảm bảo output CHỈ LÀ JSON object đó, không có bất kỳ văn bản giải thích nào khác xung quanh JSON. Ví dụ cho Ethanol:
+{
+  "name": "Ethanol",
+  "formula": "C2H5OH",
+  "smiles": "CCO",
+  "appearance": "Chất lỏng không màu, dễ bay hơi.",
+  "solutionColor": "rgba(255, 255, 255, 0.1)",
+  "description": "Là một loại rượu phổ biến, có trong đồ uống có cồn và được dùng làm dung môi công nghiệp, nhiên liệu.",
+  "type": "organic",
+  "strength": "weak",
+  "stateAtSTP": "liquid",
+  "isSoluble": true,
+  "ionFormation": null,
+  "colorWhenDry": "Không màu",
+  "density_g_cm3": 0.789,
+  "boiling_point_C": 78.37,
+  "melting_point_C": -114.1,
+  "isFlammable": true,
+  "isReactive": true,
+  "specificReactions": []
+}
+`;
+            try {
+                const result = await geminiModel.generateContent(prompt);
+                const response = result.response;
+                let rawJsonText = response.text();
+
+                rawJsonText = rawJsonText.replace(/^```json\s*([\s\S]*?)\s*```$/, '$1').trim();
+                console.log("Raw JSON text from AI:", rawJsonText);
+                currentSelectedAiChemical = JSON.parse(rawJsonText);
+                confirmChemicalDetails.innerHTML = `<pre class="bg-gray-100 p-2 rounded text-xs">${JSON.stringify(currentSelectedAiChemical, null, 2)}</pre>`;
+                confirmSaveModal.classList.remove('hidden');
+                showToast(`AI đã định nghĩa hóa chất: ${currentSelectedAiChemical.name || chemicalName}. Vui lòng xác nhận để lưu.`);
+            } catch (error) {
+                console.error("Lỗi khi gọi Gemini API hoặc parse JSON:", error);
+                showToast(`Lỗi AI: ${error.message}`); 
+                geminiApiErrorNotice.classList.remove('hidden');
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+                currentSelectedAiChemical = null;
+            } finally {
+                // Restore button state
+                createChemicalButton.innerHTML = originalButtonText;
+                createChemicalButton.disabled = false;
+            }
+        });
+
+        cancelSaveChemical.addEventListener('click', () => {
+            confirmSaveModal.classList.add('hidden');
+            currentSelectedAiChemical = null;
+            showToast("Đã hủy lưu hóa chất.");
+        });
+
+        confirmSaveChemicalButtonAction.addEventListener('click', async () => {
+            if (!currentSelectedAiChemical || !currentUserId) {
+                showToast("Không có thông tin hóa chất để lưu hoặc bạn chưa đăng nhập.");
+                confirmSaveModal.classList.add('hidden');
+                return;
+            }
+            try {
+                const chemicalToSave = {
+                    ...currentSelectedAiChemical,
+                    userId: currentUserId,
+                    createdAt: serverTimestamp()
+                };
+                const chemicalCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "customChemicals");
+                const docRef = await addDoc(chemicalCollectionRef, chemicalToSave);
+                console.log("Hóa chất đã được lưu với ID: ", docRef.id);
+                showToast(`Đã lưu hóa chất: ${currentSelectedAiChemical.name || 'Chưa có tên'}`);
+                chemicalNameInput.value = '';
+                currentSelectedAiChemical = null;
+                confirmSaveModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Lỗi khi lưu hóa chất vào Firestore:", error);
+                showToast(`Lỗi khi lưu hóa chất: ${error.message}`);
+            }
+        });
+
+        let unsubscribeUserChemicals = null;
+        let unsubscribeUserExperiments = null;
+
+        async function loadUserChemicals() {
+            if (!currentUserId) {
+                console.warn("[loadUserChemicals] No currentUserId, skipping load.");
+                return;
+            }
+            console.log(`[loadUserChemicals] Loading chemicals for user: ${currentUserId} and appId: ${appId}`);
+            userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Đang tải hóa chất...</p>'; 
+            if (unsubscribeUserChemicals) {
+                unsubscribeUserChemicals();
+                console.log("[loadUserChemicals] Unsubscribed from previous chemical listener.");
+            }
+            const chemicalsRef = collection(db, "artifacts", appId, "users", currentUserId, "customChemicals");
+            console.log("[loadUserChemicals] Firestore collection path:", chemicalsRef.path);
+
+            unsubscribeUserChemicals = onSnapshot(chemicalsRef, async (querySnapshot) => {
+                allUserChemicals = [];
+                querySnapshot.forEach((docSnap) => {
+                    allUserChemicals.push({ id: docSnap.id, data: docSnap.data() });
+                });
+
+                if (allUserChemicals.length === 0) {
+                    console.log("No user chemicals found. Attempting to load default chemicals.");
+                    if (!window.defaultChemicalsLoading) {
+                        window.defaultChemicalsLoading = true;
+                        try {
+                            for (const defaultChem of DEFAULT_CHEMICALS_DATA) {
+                                await addChemicalIfNotExists(defaultChem, currentUserId);
+                            }
+                        } finally {
+                            window.defaultChemicalsLoading = false;
+                        }
+                    }
+                } else {
+                    displayFilteredChemicals();
+                }
+            }, (error) => {
+                console.error(`Lỗi khi lắng nghe thay đổi hóa chất cho user ${currentUserId}:`, error);
+                userChemicalsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Lỗi tải danh sách hóa chất.</p>';
+            });
+        }
+        
+        async function addChemicalIfNotExists(chemicalData, userId) {
+            const chemicalsRef = collection(db, "artifacts", appId, "users", userId, "customChemicals");
+            const q = query(chemicalsRef, where("formula", "==", chemicalData.formula));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                await addDoc(chemicalsRef, { ...chemicalData, userId: userId, createdAt: serverTimestamp() });
+                console.log(`Default chemical ${chemicalData.name} added.`);
+            } else {
+                console.log(`Default chemical ${chemicalData.name} already exists. Skipping.`);
+            }
+        }
+
+        function displayFilteredChemicals() {
+            const searchTerm = chemicalSearchInput.value.toLowerCase();
+            userChemicalsContainer.innerHTML = ''; 
+
+            const filteredChemicals = allUserChemicals.filter(chem => {
+                const data = chem.data;
+                return (data.name && data.name.toLowerCase().includes(searchTerm)) ||
+                       (data.formula && data.formula.toLowerCase().includes(searchTerm)) ||
+                       (data.type && data.type.toLowerCase().includes(searchTerm));
+            });
+
+            if (filteredChemicals.length === 0) {
+                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Không tìm thấy hóa chất nào phù hợp.</p>';
+                return;
+            }
+
+            filteredChemicals.forEach((chem) => {
+                const chemicalData = chem.data;
+                const chemicalId = chem.id;
+                const chemicalElement = document.createElement('div');
+                chemicalElement.className = 'chemical-card p-3 bg-white border rounded shadow-sm cursor-pointer hover:shadow-md transition-shadow relative';
+                chemicalElement.setAttribute('data-chemical-id', chemicalId);
+
+                let typeColor = 'rgba(100, 100, 100, 1)';
+                switch (chemicalData.type) {
+                    case 'acid': typeColor = 'rgba(220, 38, 38, 1)'; break;
+                    case 'base': typeColor = 'rgba(37, 99, 235, 1)'; break;
+                    case 'metal': typeColor = 'rgba(202, 138, 4, 1)'; break;
+                    case 'salt': typeColor = 'rgba(22, 163, 74, 1)'; break;
+                    case 'oxide': typeColor = 'rgba(124, 58, 237, 1)'; break;
+                    case 'organic': typeColor = 'rgba(234, 88, 12, 1)'; break;
+                    case 'gas': typeColor = 'rgba(96, 165, 250, 1)'; break;
+                    case 'nonmetal': typeColor = 'rgba(75, 85, 99, 1)'; break;
+                }
+
+                const typeIndicator = document.createElement('div');
+                typeIndicator.className = 'type-indicator';
+                typeIndicator.style.backgroundColor = typeColor;
+                chemicalElement.appendChild(typeIndicator);
+
+                const bgColor = chemicalData.solutionColor || 'rgba(200,200,200,0.7)';
+                chemicalElement.style.backgroundColor = bgColor.replace(/[\d\.]+\)$/g, '0.1)');
+                chemicalElement.style.borderColor = typeColor;
+
+                const nameEl = document.createElement('h4');
+                nameEl.className = 'font-semibold truncate';
+                nameEl.textContent = chemicalData.name || "Chưa đặt tên";
+                chemicalElement.appendChild(nameEl);
+                const formulaEl = document.createElement('p');
+                formulaEl.className = 'text-gray-600 truncate';
+                formulaEl.textContent = `(${chemicalData.formula || 'N/A'})`;
+                chemicalElement.appendChild(formulaEl);
+
+                const tooltip = document.createElement('div');
+                tooltip.className = 'chemical-tooltip';
+                tooltip.innerHTML = `
+                    <strong>${chemicalData.name || 'N/A'}</strong> (${chemicalData.formula || 'N/A'})<br>
+                    ${chemicalData.description ? chemicalData.description.substring(0, 100) + (chemicalData.description.length > 100 ? '...' : '') : 'Không mô tả.'}
+                `;
+                chemicalElement.appendChild(tooltip);
+
+                const infoIcon = document.createElement('button');
+                infoIcon.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`;
+                infoIcon.className = 'info-icon-btn';
+                infoIcon.title = "Xem thông tin chi tiết";
+                infoIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    displayChemicalInfoInPanel(chemicalData);
+                };
+                chemicalElement.appendChild(infoIcon);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '&times;';
+                deleteButton.className = 'absolute top-1 right-1 text-xs bg-red-400 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center focus:outline-none delete-btn';
+                deleteButton.title = "Xóa hóa chất này";
+                deleteButton.style.lineHeight = '1';
+                deleteButton.onclick = async (e) => {
+                    e.stopPropagation();
+                    const confirmation = confirm(`Bạn có chắc muốn xóa hóa chất "${chemicalData.name || 'này'}" không?`);
+                    if (confirmation) {
+                        try {
+                            await deleteDoc(doc(db, "artifacts", appId, "users", currentUserId, "customChemicals", chemicalId));
+                            showToast("Đã xóa hóa chất.");
+                        } catch (error) {
+                            console.error("Lỗi khi xóa hóa chất:", error);
+                            showToast(`Lỗi xóa: ${error.message}`);
+                        }
+                    }
+                };
+                chemicalElement.appendChild(deleteButton);
+
+                chemicalElement.addEventListener('click', () => {
+                    console.log("Clicked on saved chemical (main area):", chemicalData);
+                    addKonvaChemicalFromData(chemicalData, chemicalId);
+                });
+                userChemicalsContainer.appendChild(chemicalElement);
+            });
+        }
+
+
+        chemicalSearchInput.addEventListener('keyup', displayFilteredChemicals);
+
+
+        async function saveExperiment() {
+            if (!currentUserId) {
+                showToast("Vui lòng đăng nhập để lưu thí nghiệm.");
+                return;
+            }
+            const name = experimentNameInput.value.trim();
+            if (!name) {
+                showToast("Vui lòng nhập tên thí nghiệm.");
+                return;
+            }
+            if (konvaChemicalsInBeaker.length === 0) {
+                showToast("Cốc thí nghiệm trống. Vui lòng thêm hóa chất trước khi lưu.");
+                return;
+            }
+
+            const originalButtonText = saveExperimentButton.innerHTML;
+            saveExperimentButton.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang lưu...';
+            saveExperimentButton.disabled = true;
+
+            try {
+                const experimentDataToSave = {
+                    name: name,
+                    chemicals: konvaChemicalsInBeaker, 
+                    userId: currentUserId,
+                    createdAt: serverTimestamp()
+                };
+
+                const experimentsRef = collection(db, "artifacts", appId, "users", currentUserId, "experiments");
+                const q = query(experimentsRef, where("name", "==", name));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const existingDoc = querySnapshot.docs[0];
+                    await setDoc(doc(db, "artifacts", appId, "users", currentUserId, "experiments", existingDoc.id), experimentDataToSave);
+                    showToast(`Đã cập nhật thí nghiệm "${name}"!`);
+                    currentExperimentId = existingDoc.id;
+                } else {
+                    const docRef = await addDoc(experimentsRef, experimentDataToSave);
+                    showToast(`Đã lưu thí nghiệm "${name}" với ID: ${docRef.id}`);
+                    currentExperimentId = docRef.id;
+                }
+                currentExperimentData = experimentDataToSave;
+                experimentNameInput.value = '';
+                isExperimentModified = false; 
+                updateExperimentNameDisplay();
+            }
+            catch (error) {
+                console.error("Lỗi khi lưu thí nghiệm:", error);
+                showToast(`Lỗi khi lưu thí nghiệm: ${error.message}`);
+            } finally {
+                saveExperimentButton.innerHTML = originalButtonText;
+                saveExperimentButton.disabled = false;
+            }
+        }
+
+        async function loadUserExperiments() {
+            if (!currentUserId) {
+                console.warn("[loadUserExperiments] No currentUserId, skipping load.");
+                return;
+            }
+            console.log(`[loadUserExperiments] Loading experiments for user: ${currentUserId}`);
+            userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Đang tải thí nghiệm...</p>';
+            if (unsubscribeUserExperiments) {
+                unsubscribeUserExperiments();
+                console.log("[loadUserExperiments] Unsubscribed from previous experiment listener.");
+            }
+            const experimentsRef = collection(db, "artifacts", appId, "users", currentUserId, "experiments");
+
+            unsubscribeUserExperiments = onSnapshot(experimentsRef, (querySnapshot) => {
+                console.log(`[onSnapshot] Received ${querySnapshot.docs.length} experiment documents.`);
+                userExperimentsContainer.innerHTML = '';
+                if (querySnapshot.empty) {
+                    userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>';
+                    return;
+                }
+                querySnapshot.forEach((docSnap) => {
+                    const experiment = docSnap.data();
+                    const experimentId = docSnap.id;
+                    const experimentElement = document.createElement('div');
+                    experimentElement.className = 'p-3 bg-blue-100 border border-blue-300 rounded shadow-sm flex flex-col justify-between';
+                    experimentElement.innerHTML = `
+                        <h4 class="font-semibold text-blue-800 text-sm mb-1 truncate">${experiment.name || 'Thí nghiệm không tên'}</h4>
+                        <p class="text-xs text-blue-600 mb-2">${experiment.chemicals ? experiment.chemicals.length : 0} hóa chất</p>
+                        <div class="flex gap-2 text-xs mt-auto">
+                            <button class="flex-grow bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded load-experiment-btn" data-experiment-id="${experimentId}">Tải</button>
+                            <button class="flex-grow bg-red-400 hover:bg-red-500 text-white py-1 px-2 rounded delete-experiment-btn" data-experiment-id="${experimentId}" data-experiment-name="${experiment.name || 'thí nghiệm này'}">Xóa</button>
+                        </div>
+                    `;
+                    userExperimentsContainer.appendChild(experimentElement);
+                });
+
+                userExperimentsContainer.querySelectorAll('.load-experiment-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const expId = e.target.dataset.experimentId;
+                        try {
+                            const docRef = doc(db, "artifacts", appId, "users", currentUserId, "experiments", expId);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                const expData = docSnap.data();
+                                loadExperimentIntoBeaker(expData, expId);
+                                showToast(`Đã tải thí nghiệm "${expData.name}"!`);
+                            } else {
+                                showToast("Thí nghiệm không tìm thấy.");
+                            }
+                        } catch (error) {
+                            console.error("Lỗi khi tải thí nghiệm:", error);
+                            showToast(`Lỗi tải thí nghiệm: ${error.message}`);
+                        }
+                    });
+                });
+
+                userExperimentsContainer.querySelectorAll('.delete-experiment-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        experimentIdToDelete = e.target.dataset.experimentId;
+                        const name = e.target.dataset.experimentName;
+                        experimentToDeleteName.textContent = name;
+                        confirmDeleteExperimentModal.classList.remove('hidden');
+                    });
+                });
+            }, (error) => {
+                console.error(`Lỗi khi lắng nghe thay đổi thí nghiệm cho user ${currentUserId}:`, error);
+                userExperimentsContainer.innerHTML = '<p class="text-red-500 col-span-full text-center py-4">Lỗi tải danh sách thí nghiệm.</p>';
+            });
+        }
+
+        function loadExperimentIntoBeaker(experimentData, experimentId) {
+            currentExperimentId = experimentId;
+            currentExperimentData = experimentData;
+            experimentNameInput.value = experimentData.name || '';
+
+            konvaChemicalsInBeaker = [];
+            stopAllKonvaEffects();
+            if(konvaLayer) konvaLayer.find('.dynamic-chemical').forEach(node => node.destroy());
+
+            if (experimentData.chemicals && experimentData.chemicals.length > 0) {
+                experimentData.chemicals.forEach(chemical => {
+                    konvaChemicalsInBeaker.push(chemical);
+                });
+                updateKonvaSolutionVisualState(); 
+                triggerKonvaReactionAI();
+                showToast(`Đã tải thí nghiệm "${experimentData.name}".`);
+            } else {
+                updateKonvaSolutionVisualState(); 
+                document.getElementById('responseContainer').textContent = "Thí nghiệm đã tải không có hóa chất.";
+                showToast(`Thí nghiệm "${experimentData.name}" không có hóa chất.`);
+            }
+            isExperimentModified = false;
+            updateExperimentNameDisplay();
+        }
+
+        async function deleteExperiment(experimentId) {
+            if (!currentUserId || !experimentId) return;
+            try {
+                await deleteDoc(doc(db, "artifacts", appId, "users", currentUserId, "experiments", experimentId));
+                showToast("Đã xóa thí nghiệm.");
+                if (currentExperimentId === experimentId) { 
+                    resetBeaker(); 
+                    currentExperimentId = null;
+                    currentExperimentData = null;
+                    experimentNameInput.value = '';
+                }
+            } catch (error) {
+                console.error("Lỗi khi xóa thí nghiệm:", error);
+                showToast(`Lỗi xóa thí nghiệm: ${error.message}`);
+            }
+            confirmDeleteExperimentModal.classList.add('hidden');
+            experimentIdToDelete = null;
+        }
+
+        cancelDeleteExperiment.addEventListener('click', () => {
+            confirmDeleteExperimentModal.classList.add('hidden');
+            experimentIdToDelete = null;
+        });
+
+        confirmDeleteExperiment.addEventListener('click', () => {
+            if (experimentIdToDelete) {
+                deleteExperiment(experimentIdToDelete);
+            }
+        });
+
+        function clearLabOnLogout() {
+            console.log("[clearLabOnLogout] Clearing lab data.");
+            if (unsubscribeUserChemicals) {
+                unsubscribeUserChemicals();
+                unsubscribeUserChemicals = null;
+                console.log("[clearLabOnLogout] Unsubscribed from chemical listener.");
+            }
+            if (unsubscribeUserExperiments) {
+                unsubscribeUserExperiments();
+                unsubscribeUserExperiments = null;
+                console.log("[clearLabOnLogout] Unsubscribed from experiment listener.");
+            }
+
+            if (userChemicalsContainer) {
+                userChemicalsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Vui lòng đăng nhập để xem hóa chất.</p>';
+            }
+            if (userExperimentsContainer) {
+                userExperimentsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-4">Bạn chưa lưu thí nghiệm nào.</p>';
+            }
+
+            resetBeaker(); 
+            currentSelectedAiChemical = null;
+            if (geminiApiErrorNotice) { 
+                geminiApiErrorNotice.classList.add('hidden');
+            }
+
+            currentExperimentId = null;
+            currentExperimentData = null;
+            experimentNameInput.value = '';
+            isExperimentModified = false;
+            updateExperimentNameDisplay();
+        }
+
+        let konvaStage, konvaLayer, konvaEffectsLayer;
+        let konvaBeaker, konvaSolution;
+        let konvaChemicalsInBeaker = [];
+        let konvaBubbleAnimation, konvaSmokeAnimation, konvaPrecipitateAnimation, konvaWaveAnimation;
+        let konvaWaveLine;
+        let konvaExperimentNameText; 
+
+        const KONVA_INITIAL_STAGE_WIDTH = 600;
+        const KONVA_INITIAL_STAGE_HEIGHT = 400;
+        const KONVA_BEAKER_BASE_SIZE = { width: 150, height: 180 };
+        const KONVA_BEAKER_BASE_X = KONVA_INITIAL_STAGE_WIDTH / 2 - (KONVA_BEAKER_BASE_SIZE.width / 2);
+        const KONVA_BEAKER_BASE_Y = KONVA_INITIAL_STAGE_HEIGHT - KONVA_BEAKER_BASE_SIZE.height - 20;
+        const KONVA_MAX_LIQUID_RISE = KONVA_BEAKER_BASE_SIZE.height * 0.7;
+        const KONVA_SOLUTION_PADDING_BASE = 8;
+
+        function initializeLabKonva() {
+            console.log("[initializeLabKonva] Initializing Konva stage and objects.");
+            if (konvaStage && document.getElementById('konva-stage-container').hasChildNodes()) {
+                console.log("[initializeLabKonva] Konva stage already exists, skipping re-initialization.");
+                fitKonvaStageToParent();
+                return;
+            }
+            const konvaStageContainer = document.getElementById('konva-stage-container');
+            konvaStageContainer.innerHTML = ''; 
+
+            const konvaOuterEl = document.getElementById('konva-outer-container');
+            let currentW = Math.min(KONVA_INITIAL_STAGE_WIDTH, konvaOuterEl.clientWidth > 20 ? konvaOuterEl.clientWidth - 20 : KONVA_INITIAL_STAGE_WIDTH);
+            let currentH = KONVA_INITIAL_STAGE_HEIGHT;
+            konvaStage = new Konva.Stage({
+                container: 'konva-stage-container',
+                width: currentW,
+                height: currentH,
+            });
+            konvaLayer = new Konva.Layer();
+            konvaStage.add(konvaLayer);
+            konvaEffectsLayer = new Konva.Layer();
+            konvaStage.add(konvaEffectsLayer);
+
+            konvaBeaker = new Konva.Rect({
+                x: getKonvaResponsiveValue(KONVA_BEAKER_BASE_X, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                y: getKonvaResponsiveValue(KONVA_BEAKER_BASE_Y, KONVA_INITIAL_STAGE_HEIGHT, currentH), 
+                width: getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.width, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                height: getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.height, KONVA_INITIAL_STAGE_HEIGHT, currentH), 
+                fillLinearGradientStartPoint: { x: 0, y: 0 },
+                fillLinearGradientEndPoint: { x: getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.width, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.height, KONVA_INITIAL_STAGE_HEIGHT, currentH) },
+                fillLinearGradientColorStops: [0, 'rgba(255,255,255,0.7)', 0.5, 'rgba(240,240,240,0.7)', 1, 'rgba(200,200,200,0.7)'],
+                stroke: 'black',
+                strokeWidth: Math.max(1, getKonvaResponsiveValue(2.5, KONVA_INITIAL_STAGE_WIDTH, currentW)),
+                cornerRadius: getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW), 
+                shadowColor: 'black',
+                shadowBlur: getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW), 
+                shadowOffset: { x: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW) },
+                shadowOpacity: 0.5, 
+                name: 'beaker'
+            });
+            konvaLayer.add(konvaBeaker);
+
+            konvaSolution = new Konva.Rect({
+                fill: 'rgba(173, 216, 230, 0.3)',
+                name: 'solution',
+                visible: false
+            });
+            konvaLayer.add(konvaSolution);
+
+            const waveAmplitude = getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW);
+            const waveFrequency = 0.05;
+
+            konvaWaveLine = new Konva.Line({
+                stroke: 'white',
+                strokeWidth: getKonvaResponsiveValue(2, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                lineCap: 'round',
+                lineJoin: 'round',
+                name: 'waveLine',
+                listening: false,
+                visible: false
+            });
+            konvaLayer.add(konvaWaveLine);
+
+            konvaBeaker.moveToTop();
+
+            konvaWaveAnimation = new Konva.Animation(frame => {
+                if (!konvaSolution.visible() || konvaSolution.height() === 0 || !konvaWaveLine) {
+                    konvaWaveLine.points([]);
+                    konvaWaveLine.visible(false);
+                    return;
+                }
+                konvaWaveLine.visible(true);
+                const solutionTopY = konvaSolution.y();
+                const solutionLeftX = konvaSolution.x();
+                const solutionWidth = konvaSolution.width();
+
+                const points = [];
+                let currentWaveOffset = (frame.time * 0.008) % (Math.PI * 2);
+                for (let i = 0; i <= solutionWidth; i += 5) {
+                    const y = solutionTopY + waveAmplitude * Math.sin(i * waveFrequency + currentWaveOffset); 
+                    points.push(solutionLeftX + i, y);
+                }
+                konvaWaveLine.points(points);
+                const solutionFillColor = konvaSolution.fill();
+                const waveStrokeColor = solutionFillColor.startsWith('rgba') ? solutionFillColor.replace(/[\d\.]+\)$/, '1)') : 'white';
+                konvaWaveLine.stroke(waveStrokeColor);
+            }, konvaLayer);
+            konvaWaveAnimation.start();
+
+            konvaExperimentNameText = new Konva.Text({
+                x: getKonvaResponsiveValue(KONVA_INITIAL_STAGE_WIDTH / 2, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                y: getKonvaResponsiveValue(20, KONVA_INITIAL_STAGE_HEIGHT, currentH),
+                text: 'Thí nghiệm mới',
+                fontSize: getKonvaResponsiveValue(18, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                fill: '#374151', 
+                align: 'center',
+                verticalAlign: 'middle',
+            });
+            konvaExperimentNameText.offsetX(konvaExperimentNameText.width() / 2);
+            konvaLayer.add(konvaExperimentNameText);
+            updateExperimentNameDisplay(); 
+
+            updateKonvaSolutionVisualState();
+            window.addEventListener('resize', fitKonvaStageToParent);
+            fitKonvaStageToParent();
+            console.log("[initializeLabKonva] Konva initialized.");
+
+            konvaBeaker.on('dragenter', function(e) {
+                if (e.target.name() === 'dynamic-chemical') {
+                    konvaBeaker.stroke('green');
+                    konvaBeaker.strokeWidth(Math.max(1, getKonvaResponsiveValue(4, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()))); 
+                    konvaBeaker.shadowColor('green');
+                    konvaBeaker.shadowBlur(getKonvaResponsiveValue(15, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width())); 
+                    konvaBeaker.getLayer().batchDraw();
+                }
+            });
+
+            konvaBeaker.on('dragleave', function(e) {
+                if (e.target.name() === 'dynamic-chemical') {
+                    konvaBeaker.stroke('black');
+                    konvaBeaker.strokeWidth(Math.max(1, getKonvaResponsiveValue(2.5, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width())));
+                    konvaBeaker.shadowColor('black');
+                    konvaBeaker.shadowBlur(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()));
+                    konvaBeaker.getLayer().batchDraw();
+                }
+            });
+        }
+
+        function getKonvaResponsiveValue(baseValue, baseStageDim, currentDim) {
+            return (baseValue / baseStageDim) * currentDim;
+        }
+        function getKonvaResponsiveSize(baseDim, baseStageDim, currentDim) { 
+            const scale = currentDim / baseStageDim;
+            return { width: baseDim * scale, height: baseDim * scale }; 
+        }
+
+
+        function updateKonvaSolutionVisualState() {
+            if (!konvaSolution || !konvaBeaker || !konvaStage) {
+                console.warn("[updateKonvaSolutionVisualState] Konva elements not fully initialized.");
+                return;
+            }
+
+            const padding = getKonvaResponsiveValue(KONVA_SOLUTION_PADDING_BASE, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()); 
+
+            konvaSolution.width(konvaBeaker.width() - 2 * padding);
+            konvaSolution.x(konvaBeaker.x() + padding);
+
+            if (konvaChemicalsInBeaker.length === 0) {
+                konvaSolution.height(0);
+                konvaSolution.y(konvaBeaker.y() + konvaBeaker.height() - padding);
+                konvaSolution.visible(false);
+                if (konvaWaveLine) konvaWaveLine.visible(false); 
+            } else {
+                const maxRise = getKonvaResponsiveValue(KONVA_MAX_LIQUID_RISE, KONVA_INITIAL_STAGE_HEIGHT, konvaStage.height()); 
+                const risePerChemicalDrop = maxRise / (konvaChemicalsInBeaker.length + 5);
+                let targetHeight = Math.min(konvaChemicalsInBeaker.length * risePerChemicalDrop, maxRise);
+
+                targetHeight = Math.min(targetHeight, konvaBeaker.height() - 2 * padding);
+
+                konvaSolution.height(targetHeight);
+                konvaSolution.y(konvaBeaker.y() + konvaBeaker.height() - targetHeight - padding);
+                konvaSolution.visible(true);
+                if (konvaWaveLine) konvaWaveLine.visible(true);
+            }
+            konvaLayer.batchDraw();
+        }
+
+        function addKonvaChemicalFromData(chemicalData, firestoreId) {
+            if (!konvaStage || !konvaLayer) {
+                showToast("Phòng thí nghiệm chưa sẵn sàng.");
+                return;
+            }
+            console.log(`[addKonvaChemicalFromData] Creating Konva object for: ${chemicalData.name}`);
+            const spawnX = getKonvaResponsiveValue(50 + Math.random() * 100, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width());
+            const spawnY = getKonvaResponsiveValue(50 + Math.random() * 100, KONVA_INITIAL_STAGE_HEIGHT, konvaStage.height());
+            const chemicalSizeBase = 60;
+            const scaledChemicalWidth = getKonvaResponsiveValue(chemicalSizeBase, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width());
+            const scaledChemicalHeight = getKonvaResponsiveValue(chemicalSizeBase, KONVA_INITIAL_STAGE_HEIGHT, konvaStage.height());
+
+
+            const group = new Konva.Group({
+                x: spawnX, y: spawnY, draggable: true, name: 'dynamic-chemical',
+                id: firestoreId, attrs: { chemicalData: chemicalData, initialX: spawnX, initialY: spawnY }
+            });
+
+            const bottleBodyWidth = scaledChemicalWidth * 0.7;
+            const bottleBodyHeight = scaledChemicalHeight * 0.9;
+            const bottleNeckWidth = bottleBodyWidth * 0.4;
+            const bottleNeckHeight = scaledChemicalHeight * 0.3;
+            const bottleCapHeight = scaledChemicalHeight * 0.15;
+            const bottleCapWidth = bottleNeckWidth * 1.5;
+
+            const bottleBody = new Konva.Rect({
+                x: (scaledChemicalWidth - bottleBodyWidth) / 2,
+                y: bottleCapHeight + bottleNeckHeight,
+                width: bottleBodyWidth,
+                height: bottleBodyHeight,
+                fillLinearGradientStartPoint: { x: 0, y: 0 },
+                fillLinearGradientEndPoint: { x: bottleBodyWidth, y: bottleBodyHeight },
+                fillLinearGradientColorStops: [0, chemicalData.solutionColor.replace(/[\d\.]+\)$/, '0.6)'), 0.5, chemicalData.solutionColor.replace(/[\d\.]+\)$/, '0.8)'), 1, chemicalData.solutionColor.replace(/[\d\.]+\)$/, '0.6)')],
+                stroke: 'black',
+                strokeWidth: 1,
+                cornerRadius: getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                shadowColor: 'black', shadowBlur: getKonvaResponsiveValue(6,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOpacity: 0.3,
+                shadowOffsetX: getKonvaResponsiveValue(3,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOffsetY: getKonvaResponsiveValue(3,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                name: 'bottle-body'
+            });
+
+            const bottleNeck = new Konva.Rect({
+                x: (scaledChemicalWidth - bottleNeckWidth) / 2,
+                y: bottleCapHeight,
+                width: bottleNeckWidth,
+                height: bottleNeckHeight,
+                fill: bottleBody.fill(),
+                stroke: 'black',
+                strokeWidth: 1,
+                cornerRadius: getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                shadowColor: 'black', shadowBlur: getKonvaResponsiveValue(3,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOpacity: 0.2,
+                shadowOffsetX: getKonvaResponsiveValue(1,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOffsetY: getKonvaResponsiveValue(1,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                name: 'bottle-neck'
+            });
+
+            const bottleCap = new Konva.Rect({
+                x: (scaledChemicalWidth - bottleCapWidth) / 2,
+                y: 0,
+                width: bottleCapWidth,
+                height: bottleCapHeight,
+                fill: 'gray',
+                stroke: 'black',
+                strokeWidth: 1,
+                cornerRadius: getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                shadowColor: 'black', shadowBlur: getKonvaResponsiveValue(2,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOpacity: 0.2,
+                shadowOffsetX: getKonvaResponsiveValue(1,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()), shadowOffsetY: getKonvaResponsiveValue(1,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                name: 'bottle-cap'
+            });
+
+            group.add(bottleBody);
+            group.add(bottleNeck);
+            group.add(bottleCap);
+
+            const text = new Konva.Text({
+                text: chemicalData.formula || chemicalData.name.substring(0,10),
+                fontSize: getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                fill: 'black',
+                padding: getKonvaResponsiveValue(5,KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()),
+                width: bottleBody.width(),
+                height: bottleBody.height(),
+                align: 'center',
+                verticalAlign: 'middle',
+                x: bottleBody.x(),
+                y: bottleBody.y() + (bottleBody.height() - getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width())) / 2,
+                name: 'bottle-text'
+            });
+            group.add(text);
+
+            konvaLayer.add(group);
+            group.moveToTop();
+
+            group.on('dragstart', function() {
+                this.moveToTop(); this.scale({x: 1.1, y: 1.1}); konvaLayer.batchDraw();
+            });
+
+            group.on('click tap', function(evt) {
+                if (this.isDragging() || (this.getStage() && this.getStage().isDragging && this.getStage().isDragging())) {
+                    return;
+                }
+                const data = this.attrs.chemicalData;
+                console.log("[Konva Chemical Click] Displaying info for:", data.name);
+                displayChemicalInfoInPanel(data);
+            });
+
+            group.on('dragend', function() {
+                this.scale({x: 1, y: 1}); 
+                const droppedChemicalData = this.attrs.chemicalData;
+                const beakerRect = konvaBeaker.getClientRect();
+                const chemicalRect = this.getClientRect();
+
+                if (Konva.Util.haveIntersection(beakerRect, chemicalRect)) {
+                    showToast(`Đã thêm ${droppedChemicalData.name} vào cốc.`);
+
+                    const bottleNeckNode = this.findOne('.bottle-neck');
+                    const dropStartX = this.x() + bottleNeckNode.x() + bottleNeckNode.width() / 2;
+                    const dropStartY = this.y() + bottleNeckNode.y() + bottleNeckNode.height();
+
+                    const dropRadius = getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width());
+                    const liquidDrop = new Konva.Circle({
+                        x: dropStartX,
+                        y: dropStartY,
+                        radius: dropRadius,
+                        fill: chemicalData.solutionColor.replace(/[\d\.]+\)$/, '1)'),
+                        opacity: 1,
+                        name: 'liquid-drop',
+                    });
+                    konvaEffectsLayer.add(liquidDrop);
+
+                    new Konva.Tween({
+                        node: liquidDrop,
+                        duration: 0.5,
+                        y: konvaSolution.y() + konvaSolution.height() - dropRadius,
+                        easing: Konva.Easings.EaseIn,
+                        onFinish: () => {
+                            liquidDrop.destroy();
+                            konvaEffectsLayer.batchDraw();
+
+                            konvaChemicalsInBeaker.push(droppedChemicalData);
+                            console.log("[Konva Drop Animation Finished] Chemicals in beaker:", JSON.stringify(konvaChemicalsInBeaker.map(c => c.name)));
+                            updateKonvaSolutionVisualState();
+                            triggerKonvaReactionAI();
+                            isExperimentModified = true;
+                            updateExperimentNameDisplay();
+                        }
+                    }).play();
+                     new Konva.Tween({
+                        node: this, 
+                        duration: 0.3,
+                        x: this.attrs.initialX,
+                        y: this.attrs.initialY,
+                        easing: Konva.Easings.EaseOut,
+                         onFinish: () => {
+                            this.opacity(1); 
+                            konvaLayer.batchDraw();
+                        }
+                    }).play();
+
+
+                } else {
+                     new Konva.Tween({
+                        node: this,
+                        duration: 0.3,
+                        x: this.attrs.initialX,
+                        y: this.attrs.initialY,
+                        easing: Konva.Easings.EaseOut,
+                         onFinish: () => {
+                            this.opacity(1);
+                            konvaLayer.batchDraw();
+                        }
+                    }).play();
+                    showToast("Hóa chất không được thả vào cốc.");
+                }
+                konvaBeaker.stroke('black');
+                konvaBeaker.strokeWidth(Math.max(1, getKonvaResponsiveValue(2.5, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width())));
+                konvaBeaker.shadowColor('black');
+                konvaBeaker.shadowBlur(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()));
+                konvaLayer.batchDraw();
+            });
+            konvaLayer.batchDraw();
+        }
+
+        async function triggerKonvaReactionAI() {
+            if (konvaChemicalsInBeaker.length < 1) {
+                stopAllKonvaEffects(); updateKonvaSolutionVisualState();
+                document.getElementById('responseContainer').textContent = "Cốc thí nghiệm trống hoặc chỉ có một hóa chất (chưa đủ để phản ứng).";
+                return;
+            }
+            if (!geminiModel) {
+                 showToast("Mô hình AI chưa sẵn sàng để phân tích phản ứng.");
+                 document.getElementById("gemini-api-error-notice").classList.remove('hidden'); 
+                 return;
+            }
+            stopAllKonvaEffects();
+            const chemicalNamesInBeaker = konvaChemicalsInBeaker.map(c => c.name).join(', ');
+            document.getElementById('responseContainer').textContent = `Đang phân tích phản ứng giữa: ${chemicalNamesInBeaker}...`;
+            const originalPromptButtonText = sendPromptButtonLab.innerHTML;
+            sendPromptButtonLab.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang gửi...';
+            sendPromptButtonLab.disabled = true;
+
+            const detailedChemicalsForAI = konvaChemicalsInBeaker.map(chem => ({
+                name: chem.name,
+                formula: chem.formula,
+                type: chem.type,
+                strength: chem.strength,
+                stateAtSTP: chem.stateAtSTP,
+                isSoluble: chem.isSoluble,
+                ionFormation: chem.ionFormation,
+                solutionColor: chem.solutionColor,
+                specificReactions: chem.specificReactions
+            }));
+            const prompt = `Phân tích phản ứng hóa học có thể xảy ra khi trộn các hóa chất sau trong một cốc thí nghiệm: ${JSON.stringify(detailedChemicalsForAI, null, 2)}.
+Hãy cung cấp kết quả dưới dạng một đối tượng JSON duy nhất, bao gồm các trường sau:
+- "reactionOccurred": (boolean) Phản ứng có xảy ra không.
+- "mainReactionEquation": (string, optional) Phương trình hóa học chính của phản ứng (nếu có).
+- "products": (array of strings, optional) Tên các sản phẩm chính tạo thành.
+- "visualPhenomena": {
+    "colorChangeTo": (string, optional) Màu RGBA mới của dung dịch (ví dụ: "rgba(100,255,100,0.7)"). Nếu không đổi màu đáng kể, có thể bỏ qua hoặc giữ màu hỗn hợp.
+    "gasEvolution": (boolean, optional) Có sủi bọt khí không.
+    "gasEvolutionIntensity": (string, optional) Cường độ sủi bọt khí (ví dụ: "low", "medium", "high", "vigorous").
+    "precipitateFormation": (boolean, optional) Có tạo kết tủa không.
+    "precipitateColorRGBA": (string, optional) Mã màu RGBA của kết tủa (ví dụ: "rgba(255, 255, 200, 0.9)").
+    "smokeOrVapor": (boolean, optional) Có khói hoặc hơi bay lên không.
+    "smokeIntensity": (string, optional) Cường độ khói/hơi (ví dụ: "low", "medium", "high").
+    "temperatureEffect": (string, optional) Mô tả thay đổi nhiệt độ (ví dụ: "exothermic_strong" (tỏa nhiệt mạnh), "endothermic" (thu nhiệt), "negligible" (không đáng kể)).
+  }
+- "explanation": (string) Giải thích chi tiết về hiện tượng, phản ứng và kết quả.
+Output chỉ là JSON object.
+`;
+            try {
+                const result = await geminiModel.generateContent(prompt);
+                const response = result.response;
+                let rawJsonText = response.text();
+                rawJsonText = rawJsonText.replace(/^```json\s*([\s\S]*?)\s*```$/, '$1').trim();
+                console.log("AI Reaction Analysis Parsed JSON Text:", rawJsonText);
+                const reactionData = JSON.parse(rawJsonText);
+                document.getElementById('responseContainer').innerHTML = `<strong>Giải thích từ AI:</strong><br>${reactionData.explanation || "Không có giải thích."}<br><strong>Phương trình (nếu có):</strong> ${reactionData.mainReactionEquation || "N/A"}<br><strong>Sản phẩm:</strong> ${reactionData.products ? reactionData.products.join(', ') : "N/A"}`;
+                if (reactionData.reactionOccurred && reactionData.visualPhenomena) {
+                    const phenomena = reactionData.visualPhenomena;
+                    if (phenomena.colorChangeTo) konvaSolution.fill(phenomena.colorChangeTo);
+
+                    if (phenomena.gasEvolution) startKonvaBubblingEffect(phenomena.gasEvolutionIntensity);
+                    if (phenomena.precipitateFormation) startKonvaPrecipitateEffect(phenomena.precipitateColorRGBA);
+                    if (phenomena.smokeOrVapor) startKonvaSmokeEffect(phenomena.smokeIntensity);
+                    if (phenomena.temperatureEffect) visualizeTemperatureChange(phenomena.temperatureEffect);
+                }
+            } catch (error) {
+                console.error("Lỗi khi gọi AI phân tích phản ứng:", error);
+                document.getElementById('responseContainer').textContent = `Lỗi AI: ${error.message}`;
+                geminiApiErrorNotice.classList.remove('hidden');
+                geminiApiErrorNotice.innerHTML = `<p class="font-bold">Lỗi kết nối Gemini API!</p><p>${error.message}. Vui lòng kiểm tra cấu hình dự án Firebase của bạn và đảm bảo dịch vụ Generative Language API đã được bật trên Google Cloud Console.</p>`;
+            } finally {
+                sendPromptButtonLab.innerHTML = originalPromptButtonText;
+                sendPromptButtonLab.disabled = false;
+            }
+            konvaLayer.batchDraw();
+            konvaEffectsLayer.batchDraw();
+        }
+
+        function startKonvaBubblingEffect(intensity = "medium") {
+            console.log("[KonvaEffect] Starting Bubbling with intensity:", intensity);
+            if (konvaBubbleAnimation) konvaBubbleAnimation.stop();
+            if (konvaEffectsLayer) konvaEffectsLayer.find('.bubble').forEach(n => n.destroy());
+            let interval = 80;
+            let countPerInterval = 1;
+
+            if (intensity === "low") { interval = 150; countPerInterval = 1; }
+            else if (intensity === "medium") { interval = 70; countPerInterval = 2; }
+            else if (intensity === "high") { interval = 30; countPerInterval = 4; }
+            else if (intensity === "vigorous") { interval = 15; countPerInterval = 7; }
+
+            konvaBubbleAnimation = new Konva.Animation(frame => {
+                if (!frame || !konvaSolution.visible() || konvaSolution.height() === 0) return;
+                if (frame.timeDiff > interval) {
+                    for (let i = 0; i < countPerInterval; i++) {
+                        const bubble = new Konva.Circle({
+                            x: konvaSolution.x() + Math.random() * konvaSolution.width(),
+                            y: konvaSolution.y() + konvaSolution.height() - 5,
+                            radius: Math.random() * 5 + 3,
+                            fill: 'rgba(255, 255, 255, 0.9)', opacity: 1, name: 'bubble'
+                        });
+                        konvaEffectsLayer.add(bubble);
+                        new Konva.Tween({
+                            node: bubble,
+                            duration: Math.random() * 2 + 1.5,
+                            y: konvaSolution.y() - 20,
+                            opacity: 0,
+                            onFinish: () => bubble.destroy()
+                        }).play();
+                    }
+                }
+            }, konvaEffectsLayer);
+            konvaBubbleAnimation.start();
+        }
+
+        function startKonvaSmokeEffect(intensity = "medium") {
+            console.log("[KonvaEffect] Starting Smoke with intensity:", intensity);
+            if (konvaSmokeAnimation) konvaSmokeAnimation.stop();
+            if (konvaEffectsLayer) konvaEffectsLayer.find('.smoke').forEach(n => n.destroy());
+            let interval = 120;
+            let countPerInterval = 1;
+
+            if (intensity === "low") { interval = 220; countPerInterval = 1; }
+            else if (intensity === "medium") { interval = 100; countPerInterval = 2; }
+            else if (intensity === "high") { interval = 50; countPerInterval = 3; }
+
+            konvaSmokeAnimation = new Konva.Animation(frame => {
+                if (!frame) return;
+                if (frame.timeDiff > interval) {
+                    for (let i = 0; i < countPerInterval; i++) {
+                        const smoke = new Konva.Ellipse({
+                            x: konvaBeaker.x() + konvaBeaker.width() / 2 + (Math.random() - 0.5) * konvaBeaker.width() * 0.8,
+                            y: konvaBeaker.y() - 15,
+                            radiusX: Math.random() * 15 + 10,
+                            radiusY: Math.random() * 10 + 7,
+                            fill: 'rgba(180,180,180,0.5)', opacity: 0.7, name: 'smoke'
+                        });
+                        konvaEffectsLayer.add(smoke);
+                        new Konva.Tween({
+                            node: smoke,
+                            duration: Math.random() * 3.5 + 2.5,
+                            y: konvaBeaker.y() - 100, 
+                            opacity: 0,
+                            scaleX: 2.5,
+                            scaleY: 2.5,
+                            onFinish: () => smoke.destroy()
+                        }).play();
+                    }
+                }
+            }, konvaEffectsLayer);
+            konvaSmokeAnimation.start();
+        }
+
+        function startKonvaPrecipitateEffect(precipitateColorRGBA = "rgba(250, 250, 250, 0.9)") {
+            console.log("[KonvaEffect] Starting Precipitate, color:", precipitateColorRGBA);
+            if (konvaPrecipitateAnimation) konvaPrecipitateAnimation.stop();
+            if (konvaEffectsLayer) konvaEffectsLayer.find('.precipitate').forEach(n => n.destroy());
+
+            konvaPrecipitateAnimation = new Konva.Animation(frame => {
+                 if (!frame || !konvaSolution.visible() || konvaSolution.height() === 0) return;
+                if (frame.timeDiff > 30 && Math.random() < 0.6) {
+                    const particle = new Konva.Circle({
+                        x: konvaSolution.x() + Math.random() * konvaSolution.width(),
+                        y: konvaSolution.y() + Math.random() * konvaSolution.height() * 0.7,
+                        radius: Math.random() * 4 + 2, 
+                        fill: precipitateColorRGBA,
+                        opacity: 1, 
+                        name: 'precipitate'
+                    });
+                    konvaEffectsLayer.add(particle);
+                    new Konva.Tween({
+                        node: particle,
+                        duration: Math.random() * 3 + 2,
+                        y: konvaSolution.y() + konvaSolution.height() - particle.radius() - 3,
+                        easing: Konva.Easings.EaseIn
+                    }).play();
+                }
+            }, konvaEffectsLayer);
+            konvaPrecipitateAnimation.start();
+        }
+
+        function visualizeTemperatureChange(effectType) {
+            console.log("[KonvaEffect] Visualizing Temperature Change:", effectType);
+            if (konvaEffectsLayer) konvaEffectsLayer.find('.temp-indicator').forEach(n => n.destroy());
+
+            let color = 'transparent';
+            let opacity = 0;
+            let duration = 0;
+
+            if (effectType.includes("exothermic")) {
+                color = 'rgba(255, 69, 0, 0.8)';
+                opacity = 1; 
+                duration = 2;
+            } else if (effectType.includes("endothermic")) {
+                color = 'rgba(0, 191, 255, 0.8)';
+                opacity = 1;
+                duration = 2;
+            } else {
+                return;
+            }
+
+            const tempIndicator = new Konva.Rect({
+                x: konvaBeaker.x(),
+                y: konvaBeaker.y(),
+                width: konvaBeaker.width(),
+                height: konvaBeaker.height(),
+                fill: color,
+                opacity: 0,
+                cornerRadius: konvaBeaker.cornerRadius(),
+                name: 'temp-indicator'
+            });
+            konvaEffectsLayer.add(tempIndicator);
+
+            new Konva.Tween({
+                node: tempIndicator,
+                duration: 0.5,
+                opacity: opacity,
+                easing: Konva.Easings.EaseIn,
+                onFinish: () => {
+                    new Konva.Tween({
+                        node: tempIndicator,
+                        duration: duration,
+                        opacity: 0,
+                        easing: Konva.Easings.EaseOut,
+                        onFinish: () => tempIndicator.destroy()
+                    }).play();
+                }
+            }).play();
+            if (konvaEffectsLayer) konvaEffectsLayer.batchDraw();
+        }
+
+
+        function stopAllKonvaEffects() {
+            console.log("[KonvaEffect] Stopping all effects");
+            if (konvaBubbleAnimation) { konvaBubbleAnimation.stop(); konvaBubbleAnimation = null; }
+            if (konvaSmokeAnimation) { konvaSmokeAnimation.stop(); konvaSmokeAnimation = null; }
+            if (konvaPrecipitateAnimation) { konvaPrecipitateAnimation.stop(); konvaPrecipitateAnimation = null; }
+            if (konvaWaveAnimation) { konvaWaveAnimation.stop(); konvaWaveAnimation = null; }
+
+            if (konvaEffectsLayer) {
+                konvaEffectsLayer.find('.bubble, .smoke, .precipitate, .temp-indicator, .liquid-drop').forEach(n => n.destroy());
+                konvaEffectsLayer.batchDraw();
+            }
+
+            if (konvaWaveLine) {
+                konvaWaveLine.points([]);
+                konvaWaveLine.visible(false);
+            }
+            if (konvaSolution && konvaSolution.visible() && konvaSolution.height() > 0 && konvaLayer && !konvaWaveAnimation) {
+                 const currentW = konvaStage.width();
+                 const waveAmplitude = getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW);
+                 konvaWaveAnimation = new Konva.Animation(frame => {
+                    if (!konvaSolution.visible() || konvaSolution.height() === 0 || !konvaWaveLine) {
+                        konvaWaveLine.points([]);
+                        konvaWaveLine.visible(false);
+                        return;
+                    }
+                    konvaWaveLine.visible(true);
+                    const solutionTopY = konvaSolution.y();
+                    const solutionLeftX = konvaSolution.x();
+                    const solutionWidth = konvaSolution.width();
+                    const points = [];
+                    let currentWaveOffset = (frame.time * 0.008) % (Math.PI * 2);
+                    for (let i = 0; i <= solutionWidth; i += 5) {
+                        const y = solutionTopY + waveAmplitude * Math.sin(i * 0.05 + currentWaveOffset); 
+                        points.push(solutionLeftX + i, y);
+                    }
+                    konvaWaveLine.points(points);
+                    const solutionFillColor = konvaSolution.fill();
+                    const waveStrokeColor = solutionFillColor.startsWith('rgba') ? solutionFillColor.replace(/[\d\.]+\)$/, '1)') : 'white';
+                    konvaWaveLine.stroke(waveStrokeColor);
+                }, konvaLayer);
+                konvaWaveAnimation.start();
+            }
+        }
+
+        function resetBeaker() {
+            konvaChemicalsInBeaker = [];
+            stopAllKonvaEffects();
+
+            if (konvaLayer) {
+                konvaLayer.find('.dynamic-chemical').forEach(node => {
+                    node.destroy();
+                });
+                konvaLayer.batchDraw();
+            }
+
+            if (konvaSolution && konvaBeaker) {
+                konvaSolution.height(0);
+                konvaSolution.y(konvaBeaker.y() + konvaBeaker.height() - getKonvaResponsiveValue(KONVA_SOLUTION_PADDING_BASE, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()));
+                konvaSolution.visible(false);
+                konvaSolution.fill('rgba(173, 216, 230, 0.3)');
+            }
+            if (konvaLayer) konvaLayer.batchDraw();
+            document.getElementById('responseContainer').textContent = "Cốc đã được làm sạch.";
+            showToast("Cốc đã được làm sạch.");
+
+            currentExperimentId = null;
+            currentExperimentData = null;
+            experimentNameInput.value = '';
+            isExperimentModified = false;
+            updateExperimentNameDisplay();
+        }
+
+        document.getElementById('resetBeakerButton').addEventListener('click', resetBeaker);
+
+        document.getElementById('sendPromptButtonLab').addEventListener('click', () => {
+            const promptText = document.getElementById('promptInput').value;
+            callGeminiAPI(promptText);
+        });
+
+        saveExperimentButton.addEventListener('click', saveExperiment);
+
+        toggleExperimentManagementButton.addEventListener('click', () => {
+            const isHidden = experimentManagementSection.classList.toggle('hidden');
+            toggleExperimentText.textContent = isHidden ? 'Mở Quản Lý Thí Nghiệm' : 'Đóng Quản Lý Thí Nghiệm';
+            if (!isHidden) {
+                loadUserExperiments();
+            }
+        });
+
+        function updateExperimentNameDisplay() {
+            if (konvaExperimentNameText && konvaStage) {
+                let name = currentExperimentData ? currentExperimentData.name : 'Thí nghiệm mới';
+                konvaExperimentNameText.text(`Tên thí nghiệm: ${name}${isExperimentModified ? ' *' : ''}`);
+                konvaExperimentNameText.x(getKonvaResponsiveValue(KONVA_INITIAL_STAGE_WIDTH / 2, KONVA_INITIAL_STAGE_WIDTH, konvaStage.width()));
+                konvaExperimentNameText.offsetX(konvaExperimentNameText.width() / 2);
+                if (konvaLayer) konvaLayer.batchDraw();
+            }
+        }
+
+        function fitKonvaStageToParent() {
+            const container = document.getElementById('konva-outer-container');
+            if (!container || !konvaStage) return;
+
+            let containerWidth = container.offsetWidth - 16;
+            if (containerWidth <= 0) containerWidth = KONVA_INITIAL_STAGE_WIDTH;
+
+            const scale = containerWidth / KONVA_INITIAL_STAGE_WIDTH;
+            konvaStage.width(containerWidth);
+            konvaStage.height(KONVA_INITIAL_STAGE_HEIGHT * scale);
+
+            const currentW = konvaStage.width();
+            const currentH = konvaStage.height();
+
+            if (konvaBeaker) {
+                konvaBeaker.x(getKonvaResponsiveValue(KONVA_BEAKER_BASE_X, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaBeaker.y(getKonvaResponsiveValue(KONVA_BEAKER_BASE_Y, KONVA_INITIAL_STAGE_HEIGHT, currentH));
+                konvaBeaker.width(getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.width, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaBeaker.height(getKonvaResponsiveValue(KONVA_BEAKER_BASE_SIZE.height, KONVA_INITIAL_STAGE_HEIGHT, currentH));
+
+                konvaBeaker.strokeWidth(Math.max(1, getKonvaResponsiveValue(2.5, KONVA_INITIAL_STAGE_WIDTH, currentW)));
+                konvaBeaker.cornerRadius(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaBeaker.shadowBlur(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaBeaker.shadowOffset({
+                    x: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW),
+                    y: getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW)
+                });
+                konvaBeaker.fillLinearGradientEndPoint({
+                    x: konvaBeaker.width(),
+                    y: konvaBeaker.height()
+                });
+            }
+            if (konvaSolution) {
+                updateKonvaSolutionVisualState();
+            }
+
+            if (konvaWaveLine) {
+                konvaWaveLine.strokeWidth(getKonvaResponsiveValue(2, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                const waveAmplitude = getKonvaResponsiveValue(5, KONVA_INITIAL_STAGE_WIDTH, currentW);
+                if (konvaWaveAnimation) konvaWaveAnimation.stop();
+                konvaWaveAnimation = new Konva.Animation(frame => {
+                    if (!konvaSolution.visible() || konvaSolution.height() === 0 || !konvaWaveLine) {
+                        konvaWaveLine.points([]);
+                        konvaWaveLine.visible(false);
+                        return;
+                    }
+                    konvaWaveLine.visible(true);
+                    const solutionTopY = konvaSolution.y();
+                    const solutionLeftX = konvaSolution.x();
+                    const solutionWidth = konvaSolution.width();
+                    const points = [];
+                    let currentWaveOffset = (frame.time * 0.008) % (Math.PI * 2);
+                    for (let i = 0; i <= solutionWidth; i += 5) {
+                        const y = solutionTopY + waveAmplitude * Math.sin(i * 0.05 + currentWaveOffset); 
+                        points.push(solutionLeftX + i, y);
+                    }
+                    konvaWaveLine.points(points);
+                    const solutionFillColor = konvaSolution.fill();
+                    const waveStrokeColor = solutionFillColor.startsWith('rgba') ? solutionFillColor.replace(/[\d\.]+\)$/, '1)') : 'white';
+                    konvaWaveLine.stroke(waveStrokeColor);
+                }, konvaLayer);
+                konvaWaveAnimation.start();
+            }
+
+            if (konvaExperimentNameText) {
+                konvaExperimentNameText.x(getKonvaResponsiveValue(KONVA_INITIAL_STAGE_WIDTH / 2, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaExperimentNameText.y(getKonvaResponsiveValue(20, KONVA_INITIAL_STAGE_HEIGHT, currentH));
+                konvaExperimentNameText.fontSize(getKonvaResponsiveValue(18, KONVA_INITIAL_STAGE_WIDTH, currentW));
+                konvaExperimentNameText.offsetX(konvaExperimentNameText.width() / 2);
+            }
+
+            if (konvaLayer) {
+                konvaLayer.find('.dynamic-chemical').forEach(group => {
+                    const chemicalSizeBase = 60;
+                    const scaledChemicalWidth = getKonvaResponsiveValue(chemicalSizeBase, KONVA_INITIAL_STAGE_WIDTH, currentW);
+                    const scaledChemicalHeight = getKonvaResponsiveValue(chemicalSizeBase, KONVA_INITIAL_STAGE_HEIGHT, currentH);
+
+                    const bottleBodyWidth = scaledChemicalWidth * 0.7;
+                    const bottleBodyHeight = scaledChemicalHeight * 0.9;
+                    const bottleNeckWidth = bottleBodyWidth * 0.4;
+                    const bottleNeckHeight = scaledChemicalHeight * 0.3;
+                    const bottleCapHeight = scaledChemicalHeight * 0.15;
+                    const bottleCapWidth = bottleNeckWidth * 1.5;
+
+                    const bottleBodyNode = group.findOne('.bottle-body');
+                    if (bottleBodyNode) {
+                        bottleBodyNode.width(bottleBodyWidth).height(bottleBodyHeight)
+                            .x((scaledChemicalWidth - bottleBodyWidth) / 2)
+                            .y(bottleCapHeight + bottleNeckHeight)
+                            .cornerRadius(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowBlur(getKonvaResponsiveValue(6, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowOffset({x: getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, currentW)});
+                        bottleBodyNode.fillLinearGradientEndPoint({x: bottleBodyWidth, y: bottleBodyHeight});
+                    }
+
+                    const bottleNeckNode = group.findOne('.bottle-neck');
+                    if (bottleNeckNode) {
+                        bottleNeckNode.width(bottleNeckWidth).height(bottleNeckHeight)
+                            .x((scaledChemicalWidth - bottleNeckWidth) / 2)
+                            .y(bottleCapHeight)
+                            .cornerRadius(getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowBlur(getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowOffset({x: getKonvaResponsiveValue(1, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(1, KONVA_INITIAL_STAGE_WIDTH, currentW)});
+                    }
+
+                    const bottleCapNode = group.findOne('.bottle-cap');
+                    if (bottleCapNode) {
+                        bottleCapNode.width(bottleCapWidth).height(bottleCapHeight)
+                            .x((scaledChemicalWidth - bottleCapWidth) / 2)
+                            .y(0)
+                            .cornerRadius(getKonvaResponsiveValue(3, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowBlur(getKonvaResponsiveValue(2, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                            .shadowOffset({x: getKonvaResponsiveValue(1, KONVA_INITIAL_STAGE_WIDTH, currentW), y: getKonvaResponsiveValue(1, KONVA_INITIAL_STAGE_WIDTH, currentW)});
+                    }
+
+                    const textNode = group.findOne('Text.bottle-text');
+                    if (textNode && bottleBodyNode) {
+                        textNode.fontSize(getKonvaResponsiveValue(10, KONVA_INITIAL_STAGE_WIDTH, currentW))
+                                .width(bottleBodyWidth) 
+                                .height(bottleBodyHeight)
+                                .x(bottleBodyNode.x())
+                                .y(bottleBodyNode.y() + (bottleBodyHeight - textNode.fontSize()) / 2);
+                    }
+                });
+            }
+            konvaStage.batchDraw();
+            if (konvaEffectsLayer) konvaEffectsLayer.batchDraw();
+        }
+
+    </script>
+</body>
+</html>
